@@ -1,0 +1,7 @@
+I want to make a bill splitter app, which will ask for the total number of people and the trip details as name in a group.
+On the second screen it will ask for the name of people, total amount they have spended on which part/section allowing to add multiple spends of individual people.
+it should have the capability to store these information so on saving each spends, one can use this app for entire journey and then at last it will show the result, or we can make even better it shows spending on real time and then the result of bill splits at the same time.
+maybe use local storage or anything local you want or use https://www.npmjs.com/package/react-native-mmkv-storage if this comes better.
+
+--
+as an output what i need is fully functional application with professional ui, theming and fonts. that could show the history of each trips in more detailed way.
