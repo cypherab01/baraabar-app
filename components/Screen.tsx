@@ -19,11 +19,18 @@ export function Screen({
 }: ScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const horizontal = padded ? theme.spacing.xl : 0;
   const pad: ViewStyle = {
     paddingTop: edges.includes("top") ? insets.top : 0,
     paddingBottom: edges.includes("bottom") ? insets.bottom : 0,
-    paddingLeft: edges.includes("left") ? insets.left : 0,
-    paddingRight: edges.includes("right") ? insets.right : 0,
+    paddingLeft: Math.max(
+      edges.includes("left") ? insets.left : 0,
+      horizontal,
+    ),
+    paddingRight: Math.max(
+      edges.includes("right") ? insets.right : 0,
+      horizontal,
+    ),
   };
   return (
     <View
@@ -31,7 +38,6 @@ export function Screen({
       style={StyleSheet.flatten([
         { flex: 1, backgroundColor: theme.colors.bg },
         pad,
-        padded ? { paddingHorizontal: theme.spacing.xl } : null,
         style,
       ])}
     >

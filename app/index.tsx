@@ -1,10 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { SectionList, View } from "react-native";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
-import { IconButton } from "@/components/IconButton";
+import { FAB } from "@/components/FAB";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { TripCard } from "@/components/TripCard";
@@ -31,15 +30,6 @@ export default function HomeScreen() {
           trips.length === 0
             ? "Start a new trip to begin splitting"
             : `${active.length} active · ${closed.length} settled`
-        }
-        trailing={
-          <IconButton
-            variant="accent"
-            size={42}
-            onPress={() => router.push("/trip/new" as never)}
-          >
-            <Ionicons name="add" size={22} color={theme.colors.accentText} />
-          </IconButton>
         }
       />
 
@@ -82,10 +72,18 @@ export default function HomeScreen() {
             ) : null
           }
           stickySectionHeadersEnabled={false}
-          contentContainerStyle={{ paddingBottom: theme.spacing["4xl"] }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {trips.length > 0 ? (
+        <FAB
+          icon="add"
+          onPress={() => router.push("/trip/new" as never)}
+          accessibilityLabel="New trip"
+        />
+      ) : null}
     </Screen>
   );
 }

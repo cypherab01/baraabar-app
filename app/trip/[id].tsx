@@ -3,11 +3,13 @@ import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Alert, ScrollView, View } from "react-native";
+import { ActionSheet } from "@/components/ActionSheet";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { ExpenseRow } from "@/components/ExpenseRow";
+import { FAB } from "@/components/FAB";
 import { IconButton } from "@/components/IconButton";
 import { MemberAvatar } from "@/components/MemberAvatar";
 import { Pill } from "@/components/Pill";
@@ -35,6 +37,7 @@ export default function TripDetailScreen() {
   const trip = useTrip(id);
   const expenses = useExpenses(id);
   const [tab, setTab] = useState<Tab>("live");
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const settlement = useMemo(
     () => (trip ? calculateSettlement(trip, expenses) : null),
@@ -58,47 +61,59 @@ export default function TripDetailScreen() {
   const isClosed = Boolean(trip.closedAt);
   const currencyMeta = CURRENCY_OPTIONS.find((c) => c.code === trip.currency);
 
-  const handleMenu = () => {
-    const options = [
-      { text: "Cancel", style: "cancel" as const },
-      isClosed
-        ? {
-            text: "Reopen trip",
-            onPress: () => reopenTrip(trip.id),
-          }
-        : {
-            text: "Mark as settled",
-            onPress: () => {
-              closeTrip(trip.id);
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              ).catch(() => {});
-            },
+  const menuOptions = [
+    {
+      key: "members",
+      label: "Manage people",
+      description: "Add someone who joined later, or remove a person",
+      icon: "people-outline" as const,
+      onPress: () => router.push(`/trip/${trip.id}/members` as never),
+    },
+    isClosed
+      ? {
+          key: "reopen",
+          label: "Reopen trip",
+          description: "Continue logging expenses",
+          icon: "lock-open-outline" as const,
+          onPress: () => reopenTrip(trip.id),
+        }
+      : {
+          key: "settle",
+          label: "Mark as settled",
+          description: "Lock the trip after settling up",
+          icon: "checkmark-circle-outline" as const,
+          onPress: () => {
+            closeTrip(trip.id);
+            Haptics.notificationAsync(
+              Haptics.NotificationFeedbackType.Success,
+            ).catch(() => {});
           },
-      {
-        text: "Delete trip",
-        style: "destructive" as const,
-        onPress: () => {
-          Alert.alert(
-            "Delete trip",
-            "This will remove the trip and all its expenses. This cannot be undone.",
-            [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Delete",
-                style: "destructive",
-                onPress: async () => {
-                  await deleteTrip(trip.id);
-                  router.replace("/");
-                },
-              },
-            ],
-          );
         },
+    {
+      key: "delete",
+      label: "Delete trip",
+      description: "Permanently remove the trip and all expenses",
+      icon: "trash-outline" as const,
+      destructive: true,
+      onPress: () => {
+        Alert.alert(
+          "Delete trip",
+          "This will remove the trip and all its expenses. This cannot be undone.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: async () => {
+                await deleteTrip(trip.id);
+                router.replace("/");
+              },
+            },
+          ],
+        );
       },
-    ];
-    Alert.alert(trip.name, undefined, options);
-  };
+    },
+  ];
 
   return (
     <Screen edges={["top", "left", "right"]}>
@@ -107,7 +122,12 @@ export default function TripDetailScreen() {
         title={trip.name}
         subtitle={`${trip.members.length} people · ${currencyMeta?.code ?? trip.currency}`}
         trailing={
-          <IconButton size={40} variant="soft" onPress={handleMenu}>
+          <IconButton
+            size={40}
+            variant="soft"
+            onPress={() => setMenuOpen(true)}
+            accessibilityLabel="Trip options"
+          >
             <Ionicons
               name="ellipsis-horizontal"
               size={20}
@@ -136,9 +156,6 @@ export default function TripDetailScreen() {
             trip={trip}
             expenses={expenses}
             memberSpent={settlement?.byMember ?? []}
-            onAdd={() =>
-              router.push(`/trip/${trip.id}/expense/new` as never)
-            }
             onEditExpense={(e) =>
               router.push(
                 `/trip/${trip.id}/expense/${e.id}` as never,
@@ -160,29 +177,31 @@ export default function TripDetailScreen() {
         )}
       </View>
 
-      {tab === "live" && !isClosed ? (
-        <View style={{ paddingVertical: theme.spacing.md }}>
-          <Button
-            label="Add expense"
-            size="lg"
-            block
-            leading={
-              <Ionicons
-                name="add"
-                size={20}
-                color={theme.colors.accentText}
-              />
-            }
-            onPress={() =>
-              router.push(`/trip/${trip.id}/expense/new` as never)
-            }
-          />
-        </View>
-      ) : isClosed ? (
+      {isClosed ? (
         <View style={{ paddingVertical: theme.spacing.md }}>
           <Pill label="Trip settled · read-only" tone="positive" />
         </View>
       ) : null}
+
+      {tab === "live" && !isClosed ? (
+        <FAB
+          icon="add"
+          label="Add expense"
+          size="lg"
+          onPress={() =>
+            router.push(`/trip/${trip.id}/expense/new` as never)
+          }
+          accessibilityLabel="Add expense"
+        />
+      ) : null}
+
+      <ActionSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        title={trip.name}
+        message={`${trip.members.length} people · ${expenses.length} expense${expenses.length === 1 ? "" : "s"}`}
+        options={menuOptions}
+      />
     </Screen>
   );
 }
@@ -220,7 +239,6 @@ interface LiveTabProps {
   trip: Trip;
   expenses: Expense[];
   memberSpent: MemberBalance[];
-  onAdd: () => void;
   onEditExpense: (e: Expense) => void;
   onDeleteExpense: (e: Expense) => void;
 }
@@ -229,7 +247,6 @@ function LiveTab({
   trip,
   expenses,
   memberSpent,
-  onAdd,
   onEditExpense,
   onDeleteExpense,
 }: LiveTabProps) {
@@ -259,7 +276,7 @@ function LiveTab({
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: theme.spacing["2xl"] }}
+      contentContainerStyle={{ paddingBottom: 120 }}
     >
       <View style={{ marginBottom: theme.spacing.lg, gap: theme.spacing.sm }}>
         <Text variant="overline" tone="subtle">
@@ -286,7 +303,6 @@ function LiveTab({
           emoji="🧾"
           title="No expenses yet"
           description="Tap 'Add expense' to log what someone paid for."
-          action={<Button label="Add expense" onPress={onAdd} />}
         />
       ) : (
         <View style={{ gap: theme.spacing.xl }}>

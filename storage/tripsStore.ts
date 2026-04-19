@@ -76,6 +76,54 @@ export function reopenTrip(id: string) {
   updateTrip(id, { closedAt: undefined });
 }
 
+export function addMember(tripId: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  tripsStore.set((prev) =>
+    prev.map((t) =>
+      t.id === tripId
+        ? {
+            ...t,
+            members: [...t.members, { id: nanoid(8), name: trimmed }],
+          }
+        : t,
+    ),
+  );
+}
+
+export function renameMember(tripId: string, memberId: string, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  tripsStore.set((prev) =>
+    prev.map((t) =>
+      t.id === tripId
+        ? {
+            ...t,
+            members: t.members.map((m) =>
+              m.id === memberId ? { ...m, name: trimmed } : m,
+            ),
+          }
+        : t,
+    ),
+  );
+}
+
+export function removeMember(tripId: string, memberId: string): boolean {
+  const trip = tripsStore.getSnapshot().find((t) => t.id === tripId);
+  if (!trip) return false;
+  if (trip.members.length <= 2) return false;
+  const expenses = expensesStoreFor(tripId).getSnapshot();
+  if (expenses.some((e) => e.payerId === memberId)) return false;
+  tripsStore.set((prev) =>
+    prev.map((t) =>
+      t.id === tripId
+        ? { ...t, members: t.members.filter((m) => m.id !== memberId) }
+        : t,
+    ),
+  );
+  return true;
+}
+
 export interface NewExpenseInput {
   tripId: string;
   payerId: string;

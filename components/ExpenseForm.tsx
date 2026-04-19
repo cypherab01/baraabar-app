@@ -2,14 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
+import { Alert, Pressable, View } from "react-native";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  View,
-} from "react-native";
+  KeyboardAwareScrollView,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -130,18 +127,16 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
           </IconButton>
         }
       />
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        contentContainerStyle={{
+          paddingBottom: theme.spacing["4xl"],
+          gap: theme.spacing.xl,
+        }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={{
-            paddingBottom: theme.spacing["4xl"],
-            gap: theme.spacing.xl,
-          }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
           <Card padded>
             <Text variant="overline" tone="subtle">
               Amount
@@ -186,10 +181,12 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
             <Text variant="label" tone="muted">
               Paid by
             </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingRight: 8 }}
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+              }}
             >
               {trip.members.map((m) => {
                 const active = m.id === payerId;
@@ -235,7 +232,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
             {payerError ? (
               <Text variant="caption" tone="negative">
                 {payerError}
@@ -314,9 +311,16 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
             maxLength={120}
             autoCapitalize="sentences"
           />
-        </ScrollView>
+      </KeyboardAwareScrollView>
 
-        <View style={{ gap: theme.spacing.sm, paddingTop: theme.spacing.md }}>
+      <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        <View
+          style={{
+            gap: theme.spacing.sm,
+            paddingVertical: theme.spacing.md,
+            backgroundColor: theme.colors.bg,
+          }}
+        >
           <Button
             label={existing ? "Save changes" : "Add expense"}
             size="lg"
@@ -346,7 +350,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
             </Pressable>
           ) : null}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardStickyView>
     </Screen>
   );
 }

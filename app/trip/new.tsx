@@ -2,13 +2,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { nanoid } from "nanoid/non-secure";
 import { useState } from "react";
+import { Pressable, View } from "react-native";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  View,
-} from "react-native";
+  KeyboardAwareScrollView,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -18,19 +16,19 @@ import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import { createTrip } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
-import { CURRENCY_OPTIONS } from "@/types/models";
 
 interface DraftMember {
   key: string;
   name: string;
 }
 
+const DEFAULT_CURRENCY = "NPR";
+
 export default function NewTripScreen() {
   const theme = useTheme();
   const router = useRouter();
 
   const [name, setName] = useState("");
-  const [currency, setCurrency] = useState("NPR");
   const [members, setMembers] = useState<DraftMember[]>([
     { key: nanoid(6), name: "" },
     { key: nanoid(6), name: "" },
@@ -45,8 +43,7 @@ export default function NewTripScreen() {
       ? "Add at least two people"
       : undefined;
 
-  const canSubmit =
-    name.trim().length > 0 && trimmedMembers.length >= 2 && Boolean(currency);
+  const canSubmit = name.trim().length > 0 && trimmedMembers.length >= 2;
 
   const addMember = () => {
     setMembers((prev) => [...prev, { key: nanoid(6), name: "" }]);
@@ -69,7 +66,7 @@ export default function NewTripScreen() {
     if (!canSubmit) return;
     const trip = createTrip({
       name,
-      currency,
+      currency: DEFAULT_CURRENCY,
       memberNames: members.map((m) => m.name),
     });
     router.replace(`/trip/${trip.id}` as never);
@@ -86,172 +83,134 @@ export default function NewTripScreen() {
           </IconButton>
         }
       />
-      <KeyboardAvoidingView
+      <KeyboardAwareScrollView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={20}
+        contentContainerStyle={{
+          paddingBottom: theme.spacing["4xl"],
+          gap: theme.spacing.lg,
+        }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={24}
       >
-        <ScrollView
-          contentContainerStyle={{
-            paddingBottom: theme.spacing["4xl"],
-            gap: theme.spacing.lg,
-          }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <TextField
-            label="Trip name"
-            placeholder="e.g. Pokhara Weekend"
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-            autoCorrect={false}
-            error={nameError}
-            maxLength={60}
-          />
+        <TextField
+          label="Trip name"
+          placeholder="e.g. Pokhara Weekend"
+          value={name}
+          onChangeText={setName}
+          autoCapitalize="words"
+          autoCorrect={false}
+          error={nameError}
+          maxLength={60}
+        />
 
-          <View style={{ gap: 8 }}>
-            <Text variant="label" tone="muted">
-              Currency
+        <Card padded>
+          <View style={{ marginBottom: theme.spacing.md }}>
+            <Text variant="subheading">People</Text>
+            <Text variant="caption" tone="muted">
+              Everyone splitting costs on this trip
             </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingRight: 8 }}
-            >
-              {CURRENCY_OPTIONS.map((c) => {
-                const active = c.code === currency;
-                return (
-                  <Pressable
-                    key={c.code}
-                    onPress={() => setCurrency(c.code)}
-                    style={({ pressed }) => ({
-                      opacity: pressed ? 0.85 : 1,
-                    })}
-                  >
-                    <View
-                      style={{
-                        paddingHorizontal: 14,
-                        paddingVertical: 10,
-                        borderRadius: theme.radii.pill,
-                        backgroundColor: active
-                          ? theme.colors.accent
-                          : theme.colors.surface,
-                        borderWidth: 1,
-                        borderColor: active
-                          ? theme.colors.accent
-                          : theme.colors.border,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Inter_700Bold",
-                          color: active
-                            ? theme.colors.accentText
-                            : theme.colors.text,
-                          fontSize: 15,
-                        }}
-                      >
-                        {c.symbol}
-                      </Text>
-                      <Text
-                        variant="label"
-                        style={{
-                          color: active
-                            ? theme.colors.accentText
-                            : theme.colors.textMuted,
-                          fontFamily: "Inter_600SemiBold",
-                        }}
-                      >
-                        {c.code}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
           </View>
 
-          <Card padded>
-            <View
+          <View style={{ gap: theme.spacing.sm }}>
+            {members.map((m, i) => (
+              <View
+                key={m.key}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <TextField
+                    placeholder={`Person ${i + 1}`}
+                    value={m.name}
+                    onChangeText={(v) => updateMember(m.key, v)}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    maxLength={30}
+                    returnKeyType={
+                      i === members.length - 1 ? "done" : "next"
+                    }
+                  />
+                </View>
+                {members.length > 2 ? (
+                  <IconButton
+                    size={40}
+                    variant="flat"
+                    onPress={() => removeMember(m.key)}
+                    accessibilityLabel={`Remove person ${i + 1}`}
+                  >
+                    <Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color={theme.colors.textMuted}
+                    />
+                  </IconButton>
+                ) : null}
+              </View>
+            ))}
+          </View>
+
+          <Pressable
+            onPress={addMember}
+            android_ripple={{ color: theme.colors.accentSoft }}
+            style={({ pressed }) => ({
+              marginTop: theme.spacing.md,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              paddingVertical: 12,
+              borderRadius: theme.radii.md,
+              borderWidth: 1.5,
+              borderStyle: "dashed",
+              borderColor: pressed
+                ? theme.colors.accent
+                : theme.colors.borderStrong,
+              backgroundColor: pressed
+                ? theme.colors.accentSoft
+                : "transparent",
+            })}
+            accessibilityRole="button"
+            accessibilityLabel="Add another person"
+          >
+            <Ionicons
+              name="person-add-outline"
+              size={18}
+              color={theme.colors.accent}
+            />
+            <Text
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: theme.spacing.md,
+                color: theme.colors.accent,
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 14,
               }}
             >
-              <View>
-                <Text variant="subheading">People</Text>
-                <Text variant="caption" tone="muted">
-                  Everyone splitting costs on this trip
-                </Text>
-              </View>
-              <IconButton size={36} variant="soft" onPress={addMember}>
-                <Ionicons
-                  name="person-add-outline"
-                  size={18}
-                  color={theme.colors.text}
-                />
-              </IconButton>
-            </View>
+              Add another person
+            </Text>
+          </Pressable>
 
-            <View style={{ gap: theme.spacing.sm }}>
-              {members.map((m, i) => (
-                <View
-                  key={m.key}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 10,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <TextField
-                      placeholder={`Person ${i + 1}`}
-                      value={m.name}
-                      onChangeText={(v) => updateMember(m.key, v)}
-                      autoCapitalize="words"
-                      autoCorrect={false}
-                      maxLength={30}
-                      returnKeyType={
-                        i === members.length - 1 ? "done" : "next"
-                      }
-                    />
-                  </View>
-                  {members.length > 2 ? (
-                    <IconButton
-                      size={40}
-                      variant="flat"
-                      onPress={() => removeMember(m.key)}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color={theme.colors.textMuted}
-                      />
-                    </IconButton>
-                  ) : null}
-                </View>
-              ))}
-            </View>
+          {memberError ? (
+            <Text
+              variant="caption"
+              tone="negative"
+              style={{ marginTop: theme.spacing.sm }}
+            >
+              {memberError}
+            </Text>
+          ) : null}
+        </Card>
+      </KeyboardAwareScrollView>
 
-            {memberError ? (
-              <Text
-                variant="caption"
-                tone="negative"
-                style={{ marginTop: theme.spacing.sm }}
-              >
-                {memberError}
-              </Text>
-            ) : null}
-          </Card>
-        </ScrollView>
-
-        <View style={{ paddingTop: theme.spacing.md }}>
+      <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
+        <View
+          style={{
+            paddingVertical: theme.spacing.md,
+            backgroundColor: theme.colors.bg,
+          }}
+        >
           <Button
             label="Create trip"
             size="lg"
@@ -260,7 +219,7 @@ export default function NewTripScreen() {
             disabled={submitted && !canSubmit}
           />
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardStickyView>
     </Screen>
   );
 }
