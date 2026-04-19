@@ -17,7 +17,9 @@
         "backgroundColor": "#FFFFFF"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.cypherab01.baraabar",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -41,6 +43,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1e5a5000-b288-42cb-8da1-2d438ad3625d"
+      }
+    },
+    "owner": "cypherab01",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/1e5a5000-b288-42cb-8da1-2d438ad3625d"
     }
   }
 }
