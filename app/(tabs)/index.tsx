@@ -23,7 +23,7 @@ export default function HomeScreen() {
   if (closed.length > 0) sections.push({ title: "Settled", data: closed });
 
   return (
-    <Screen>
+    <Screen edges={["top", "left", "right"]}>
       <AppHeader
         title="Trips"
         subtitle={

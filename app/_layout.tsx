@@ -56,7 +56,7 @@ function RootStack() {
           animationTypeForReplace: "pop",
         }}
       >
-        <Stack.Screen name="index" />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="trip/new" options={{ presentation: "modal" }} />
         <Stack.Screen name="trip/[id]" />
         <Stack.Screen

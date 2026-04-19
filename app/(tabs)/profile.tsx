@@ -1,0 +1,343 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import * as Linking from "expo-linking";
+import { useState } from "react";
+import { Alert, Pressable, ScrollView, View } from "react-native";
+import { AppHeader } from "@/components/AppHeader";
+import { Card } from "@/components/Card";
+import { Screen } from "@/components/Screen";
+import { Text } from "@/components/Text";
+import { DEVELOPER, type SocialLink } from "@/constants/developer";
+import { clearAllData } from "@/storage/tripsStore";
+import { useTheme } from "@/theme";
+
+const SOCIAL_ICON: Record<SocialLink["key"], React.ComponentProps<typeof Ionicons>["name"]> = {
+  github: "logo-github",
+  linkedin: "logo-linkedin",
+  instagram: "logo-instagram",
+  facebook: "logo-facebook",
+  twitter: "logo-twitter",
+};
+
+export default function ProfileScreen() {
+  const theme = useTheme();
+  const [clearing, setClearing] = useState(false);
+
+  const openURL = async (url: string) => {
+    if (!url) {
+      Alert.alert("Coming soon", "This link will be available in a future update.");
+      return;
+    }
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) await Linking.openURL(url);
+      else Alert.alert("Can't open link", url);
+    } catch {
+      Alert.alert("Can't open link", url);
+    }
+  };
+
+  const handleClear = () => {
+    Alert.alert(
+      "Clear all data?",
+      "This will permanently delete every trip, expense, and member on this device. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear everything",
+          style: "destructive",
+          onPress: async () => {
+            setClearing(true);
+            try {
+              await clearAllData();
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              ).catch(() => {});
+            } finally {
+              setClearing(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  return (
+    <Screen edges={["top", "left", "right"]}>
+      <AppHeader title="About" subtitle="App & developer info" />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingBottom: theme.spacing["4xl"],
+          gap: theme.spacing.lg,
+        }}
+      >
+        <Card padded={false}>
+          <LinkRow
+            icon="shield-checkmark-outline"
+            label="Privacy policy"
+            description="How your data is stored (locally, on your device)"
+            onPress={() => openURL(DEVELOPER.privacyPolicyUrl)}
+            divider={false}
+          />
+        </Card>
+
+        <View style={{ gap: theme.spacing.sm }}>
+          <Text variant="overline" tone="subtle">
+            Developer
+          </Text>
+          <Card padded>
+            <Text variant="heading" numberOfLines={1}>
+              {DEVELOPER.name}
+            </Text>
+            <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>
+              {DEVELOPER.role}
+              {DEVELOPER.location ? ` · ${DEVELOPER.location}` : ""}
+            </Text>
+
+            {DEVELOPER.bio ? (
+              <Text
+                variant="body"
+                tone="muted"
+                style={{ marginTop: theme.spacing.md }}
+              >
+                {DEVELOPER.bio}
+              </Text>
+            ) : null}
+
+            <View
+              style={{
+                marginTop: theme.spacing.lg,
+                gap: 0,
+                borderTopWidth: 1,
+                borderTopColor: theme.colors.border,
+              }}
+            >
+              <ContactRow
+                icon="mail-outline"
+                label="Email"
+                value={DEVELOPER.email}
+                onPress={() => openURL(`mailto:${DEVELOPER.email}`)}
+              />
+              {DEVELOPER.phone ? (
+                <ContactRow
+                  icon="call-outline"
+                  label="Phone"
+                  value={DEVELOPER.phone}
+                  onPress={() =>
+                    openURL(`tel:${DEVELOPER.phone!.replace(/\s+/g, "")}`)
+                  }
+                />
+              ) : null}
+            </View>
+
+            <View style={{ marginTop: theme.spacing.lg }}>
+              <Text variant="overline" tone="subtle">
+                Find me on
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 10,
+                  marginTop: theme.spacing.sm,
+                }}
+              >
+                {DEVELOPER.socials.map((s) => (
+                  <Pressable
+                    key={s.key}
+                    onPress={() => openURL(s.url)}
+                    android_ripple={{ color: theme.colors.accentSoft }}
+                    style={({ pressed }) => ({
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: theme.radii.pill,
+                      backgroundColor: theme.colors.surfaceAlt,
+                      opacity: pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <Ionicons
+                      name={SOCIAL_ICON[s.key]}
+                      size={16}
+                      color={theme.colors.text}
+                    />
+                    <Text
+                      variant="label"
+                      style={{ fontFamily: "Inter_600SemiBold" }}
+                    >
+                      {s.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </Card>
+        </View>
+
+        <View style={{ gap: theme.spacing.sm }}>
+          <Text variant="overline" tone="subtle">
+            Danger zone
+          </Text>
+          <Card padded>
+            <Text variant="bodyMedium">Clear all data</Text>
+            <Text
+              variant="caption"
+              tone="muted"
+              style={{ marginTop: 4, marginBottom: theme.spacing.md }}
+            >
+              Delete every trip and expense and start fresh. This only affects
+              this device — nothing is stored online.
+            </Text>
+            <Pressable
+              onPress={handleClear}
+              disabled={clearing}
+              android_ripple={{ color: theme.colors.negativeSoft }}
+              style={({ pressed }) => ({
+                height: 48,
+                borderRadius: theme.radii.md,
+                backgroundColor: theme.colors.negativeSoft,
+                borderWidth: 1,
+                borderColor: theme.colors.negative,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+                opacity: pressed || clearing ? 0.7 : 1,
+              })}
+              accessibilityRole="button"
+              accessibilityLabel="Clear all data"
+            >
+              <Ionicons
+                name="trash-outline"
+                size={18}
+                color={theme.colors.negative}
+              />
+              <Text
+                style={{
+                  color: theme.colors.negative,
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 15,
+                }}
+              >
+                {clearing ? "Clearing..." : "Clear all data"}
+              </Text>
+            </Pressable>
+          </Card>
+        </View>
+
+        <Text
+          variant="caption"
+          tone="subtle"
+          align="center"
+          style={{ marginTop: theme.spacing.sm }}
+        >
+          Baraabar · ठ्याक्कै बराबर · Made with care in Nepal
+        </Text>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+function LinkRow({
+  icon,
+  label,
+  description,
+  onPress,
+  divider = true,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  description?: string;
+  onPress: () => void;
+  divider?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: theme.colors.surfaceAlt }}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        borderBottomWidth: divider ? 1 : 0,
+        borderBottomColor: theme.colors.border,
+        backgroundColor: pressed ? theme.colors.surfaceAlt : "transparent",
+      })}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          backgroundColor: theme.colors.accentSoft,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons name={icon} size={18} color={theme.colors.accent} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text variant="bodyMedium">{label}</Text>
+        {description ? (
+          <Text variant="caption" tone="muted">
+            {description}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={theme.colors.textSubtle}
+      />
+    </Pressable>
+  );
+}
+
+function ContactRow({
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  label: string;
+  value: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: theme.colors.surfaceAlt }}
+      style={({ pressed }) => ({
+        flexDirection: "row",
+        alignItems: "center",
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.border,
+        backgroundColor: pressed ? theme.colors.surfaceAlt : "transparent",
+      })}
+    >
+      <Ionicons name={icon} size={18} color={theme.colors.textMuted} />
+      <View style={{ flex: 1 }}>
+        <Text variant="caption" tone="muted">
+          {label}
+        </Text>
+        <Text variant="bodyMedium">{value}</Text>
+      </View>
+      <Ionicons
+        name="chevron-forward"
+        size={16}
+        color={theme.colors.textSubtle}
+      />
+    </Pressable>
+  );
+}

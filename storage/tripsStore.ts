@@ -108,6 +108,23 @@ export function renameMember(tripId: string, memberId: string, name: string) {
   );
 }
 
+export async function clearAllData(): Promise<void> {
+  try {
+    const keys = await AsyncStorage.getAllKeys();
+    const billsKeys = keys.filter((k) => k.startsWith("@bills/"));
+    if (billsKeys.length > 0) {
+      await AsyncStorage.multiRemove(billsKeys);
+    }
+  } catch (err) {
+    console.warn("[tripsStore] clearAllData failed to clear disk", err);
+  }
+  for (const store of expenseStores.values()) {
+    store.replace([]);
+  }
+  expenseStores.clear();
+  tripsStore.replace([]);
+}
+
 export function removeMember(tripId: string, memberId: string): boolean {
   const trip = tripsStore.getSnapshot().find((t) => t.id === tripId);
   if (!trip) return false;

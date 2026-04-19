@@ -1,5 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
+import { BottomTabBarHeightContext } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
+import { useContext } from "react";
 import type React from "react";
 import { Platform, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,6 +25,7 @@ export function FAB({
 }: FABProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useContext(BottomTabBarHeightContext);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -32,13 +35,17 @@ export function FAB({
   const diameter = size === "lg" ? 64 : 56;
   const iconSize = size === "lg" ? 28 : 26;
 
+  const bottomInset = tabBarHeight
+    ? tabBarHeight + theme.spacing.md
+    : Math.max(insets.bottom, theme.spacing.md) + theme.spacing.lg;
+
   return (
     <View
       pointerEvents="box-none"
       style={{
         position: "absolute",
         right: theme.spacing.xl,
-        bottom: Math.max(insets.bottom, theme.spacing.md) + theme.spacing.lg,
+        bottom: bottomInset,
       }}
     >
       <Pressable
