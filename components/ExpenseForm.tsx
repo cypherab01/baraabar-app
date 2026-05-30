@@ -16,7 +16,7 @@ import { MemberAvatar } from "@/components/MemberAvatar";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
-import { currencySymbol } from "@/lib/format";
+import { currencySymbol, formatAmount } from "@/lib/format";
 import {
   addExpense,
   deleteExpense,
@@ -53,6 +53,16 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
   );
   const [note, setNote] = useState(existing?.note ?? "");
   const [submitted, setSubmitted] = useState(false);
+  const [splitEveryone, setSplitEveryone] = useState(!existing?.splitWith);
+  const [selectedSplitIds, setSelectedSplitIds] = useState<Set<string>>(() => {
+    if (existing?.splitWith) {
+      const valid = existing.splitWith.filter((id) =>
+        trip.members.some((m) => m.id === id),
+      );
+      return new Set(valid);
+    }
+    return new Set(trip.members.map((m) => m.id));
+  });
 
   const parsedAmount = useMemo(() => parseAmount(amountText), [amountText]);
   const amountError =
@@ -65,15 +75,46 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
       ? "Give this expense a name"
       : undefined;
 
+  const selectedCount = splitEveryone ? trip.members.length : selectedSplitIds.size;
+
   const canSubmit =
     parsedAmount != null &&
     parsedAmount > 0 &&
     Boolean(payerId) &&
-    (category !== "other" || customLabel.trim().length > 0);
+    (category !== "other" || customLabel.trim().length > 0) &&
+    selectedCount > 0;
+
+  const perShare =
+    parsedAmount != null && parsedAmount > 0 && selectedCount > 0
+      ? parsedAmount / selectedCount
+      : null;
+
+  const toggleSplitEveryone = (next: boolean) => {
+    setSplitEveryone(next);
+    if (!next) {
+      // entering partial mode: pre-select all members
+      setSelectedSplitIds(new Set(trip.members.map((m) => m.id)));
+    }
+    Haptics.selectionAsync().catch(() => {});
+  };
+
+  const toggleSplitMember = (id: string) => {
+    setSelectedSplitIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    Haptics.selectionAsync().catch(() => {});
+  };
 
   const onSave = () => {
     setSubmitted(true);
     if (!canSubmit || !payerId || parsedAmount == null) return;
+
+    const splitWith = splitEveryone
+      ? undefined
+      : Array.from(selectedSplitIds);
 
     if (existing) {
       updateExpense(trip.id, existing.id, {
@@ -83,6 +124,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
         customCategoryLabel:
           category === "other" ? customLabel.trim() : undefined,
         note: note.trim() || undefined,
+        splitWith,
       });
     } else {
       addExpense({
@@ -93,6 +135,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
         customCategoryLabel:
           category === "other" ? customLabel.trim() : undefined,
         note: note.trim() || undefined,
+        splitWith,
       });
     }
     Haptics.notificationAsync(
@@ -311,6 +354,106 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
             maxLength={120}
             autoCapitalize="sentences"
           />
+
+          <View style={{ gap: theme.spacing.sm }}>
+            <Pressable
+              onPress={() => toggleSplitEveryone(!splitEveryone)}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingVertical: theme.spacing.sm,
+              }}
+            >
+              <View style={{ flex: 1, paddingRight: theme.spacing.md }}>
+                <Text variant="bodyMedium">Split equally with everyone</Text>
+                <Text variant="caption" tone="muted">
+                  Turn off to pick who&apos;s splitting this one
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 44,
+                  height: 26,
+                  borderRadius: 13,
+                  padding: 2,
+                  backgroundColor: splitEveryone
+                    ? theme.colors.accent
+                    : theme.colors.surfaceAlt,
+                  justifyContent: "center",
+                }}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: theme.colors.bgElevated,
+                    alignSelf: splitEveryone ? "flex-end" : "flex-start",
+                  }}
+                />
+              </View>
+            </Pressable>
+
+            {!splitEveryone ? (
+              <View style={{ gap: theme.spacing.sm }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {trip.members.map((m) => {
+                    const active = selectedSplitIds.has(m.id);
+                    return (
+                      <Pressable key={m.id} onPress={() => toggleSplitMember(m.id)}>
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 6,
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                            borderRadius: theme.radii.pill,
+                            backgroundColor: active
+                              ? theme.colors.accentSoft
+                              : theme.colors.surface,
+                            borderWidth: 1,
+                            borderColor: active
+                              ? theme.colors.accent
+                              : theme.colors.border,
+                          }}
+                        >
+                          <Ionicons
+                            name={active ? "checkmark-circle" : "ellipse-outline"}
+                            size={16}
+                            color={active ? theme.colors.accent : theme.colors.textSubtle}
+                          />
+                          <Text
+                            variant="label"
+                            style={{
+                              color: active ? theme.colors.text : theme.colors.textMuted,
+                              fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium",
+                            }}
+                          >
+                            {m.name}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text variant="caption" tone={selectedCount === 0 ? "negative" : "muted"}>
+                  {selectedCount === 0
+                    ? "Pick at least one person to split with"
+                    : perShare != null
+                      ? `${selectedCount} of ${trip.members.length} splitting · ${formatAmount(perShare, trip.currency)} each`
+                      : `${selectedCount} of ${trip.members.length} splitting`}
+                </Text>
+              </View>
+            ) : null}
+          </View>
       </KeyboardAwareScrollView>
 
       <KeyboardStickyView offset={{ closed: 0, opened: 0 }}>
