@@ -177,7 +177,7 @@ export function addExpense(input: NewExpenseInput): Expense {
     customCategoryLabel: input.customCategoryLabel?.trim() || undefined,
     note: input.note?.trim() || undefined,
     createdAt: Date.now(),
-    splitWith: input.splitWith,
+    splitWith: input.splitWith && input.splitWith.length > 0 ? input.splitWith : undefined,
   };
   expensesStoreFor(input.tripId).set((prev) => [expense, ...prev]);
   return expense;
