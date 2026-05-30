@@ -35,7 +35,7 @@ export default function AboutScreen() {
 
   return (
     <Screen edges={["top", "left", "right"]}>
-      <AppHeader title="About" subtitle="App & developer info" showBack />
+      <AppHeader title="Developer info" subtitle="Who built Baraabar" showBack />
 
       <ScrollView
         showsVerticalScrollIndicator={false}

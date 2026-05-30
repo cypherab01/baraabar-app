@@ -157,7 +157,7 @@ export default function MoreScreen() {
           <Card padded={false}>
             <Row
               icon="information-circle-outline"
-              label="About Baraabar"
+              label="Developer info"
               description={DEVELOPER.name}
               onPress={go("/settings/about")}
             />
