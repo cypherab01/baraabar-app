@@ -44,16 +44,6 @@ export default function AboutScreen() {
           gap: theme.spacing.lg,
         }}
       >
-        <Card padded={false}>
-          <LinkRow
-            icon="shield-checkmark-outline"
-            label="Privacy policy"
-            description="How your data is stored (locally, on your device)"
-            onPress={() => openURL(DEVELOPER.privacyPolicyUrl)}
-            divider={false}
-          />
-        </Card>
-
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="overline" tone="subtle">
             Developer
@@ -159,64 +149,6 @@ export default function AboutScreen() {
         </Text>
       </ScrollView>
     </Screen>
-  );
-}
-
-function LinkRow({
-  icon,
-  label,
-  description,
-  onPress,
-  divider = true,
-}: {
-  icon: React.ComponentProps<typeof Ionicons>["name"];
-  label: string;
-  description?: string;
-  onPress: () => void;
-  divider?: boolean;
-}) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      android_ripple={{ color: theme.colors.surfaceAlt }}
-      style={({ pressed }) => ({
-        flexDirection: "row",
-        alignItems: "center",
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        borderBottomWidth: divider ? 1 : 0,
-        borderBottomColor: theme.colors.border,
-        backgroundColor: pressed ? theme.colors.surfaceAlt : "transparent",
-      })}
-    >
-      <View
-        style={{
-          width: 36,
-          height: 36,
-          borderRadius: 18,
-          backgroundColor: theme.colors.accentSoft,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Ionicons name={icon} size={18} color={theme.colors.accent} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text variant="bodyMedium">{label}</Text>
-        {description ? (
-          <Text variant="caption" tone="muted">
-            {description}
-          </Text>
-        ) : null}
-      </View>
-      <Ionicons
-        name="chevron-forward"
-        size={18}
-        color={theme.colors.textSubtle}
-      />
-    </Pressable>
   );
 }
 
