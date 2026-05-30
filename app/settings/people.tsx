@@ -23,7 +23,6 @@ import {
   deletePerson,
   renamePerson,
 } from "@/storage/personsStore";
-import { tripsStore } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
 import type { Person } from "@/types/models";
 
@@ -39,7 +38,6 @@ export default function PeopleScreen() {
   const [editing, setEditing] = useState<Person | null>(null);
   const [adding, setAdding] = useState(false);
   const [draftName, setDraftName] = useState("");
-  const [cascadeRename, setCascadeRename] = useState(false);
 
   const usageByPerson = useMemo(() => {
     const map = new Map<string, number>();
@@ -69,14 +67,12 @@ export default function PeopleScreen() {
   const openEdit = (p: Person) => {
     setEditing(p);
     setDraftName(p.name);
-    setCascadeRename(false);
   };
 
   const closeSheet = () => {
     setEditing(null);
     setAdding(false);
     setDraftName("");
-    setCascadeRename(false);
   };
 
   const saveRename = () => {
@@ -84,16 +80,6 @@ export default function PeopleScreen() {
     const next = draftName.trim();
     if (!next) return;
     renamePerson(editing.id, next);
-    if (cascadeRename) {
-      tripsStore.set((prev) =>
-        prev.map((t) => ({
-          ...t,
-          members: t.members.map((m) =>
-            m.personId === editing.id ? { ...m, name: next } : m,
-          ),
-        })),
-      );
-    }
     closeSheet();
   };
 
@@ -282,27 +268,9 @@ export default function PeopleScreen() {
             />
 
             {editing ? (
-              <Pressable
-                onPress={() => setCascadeRename((v) => !v)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: cascadeRename }}
-                accessibilityLabel="Also rename in all trips"
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: theme.spacing.sm,
-                  paddingVertical: theme.spacing.sm,
-                }}
-              >
-                <Ionicons
-                  name={cascadeRename ? "checkbox" : "square-outline"}
-                  size={22}
-                  color={
-                    cascadeRename ? theme.colors.accent : theme.colors.textSubtle
-                  }
-                />
-                <Text style={{ flex: 1 }}>Also rename in all trips</Text>
-              </Pressable>
+              <Text variant="caption" tone="muted">
+                Updates this person&apos;s name everywhere they appear.
+              </Text>
             ) : null}
 
             <View style={{ flexDirection: "row", gap: theme.spacing.sm }}>

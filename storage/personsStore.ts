@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid/non-secure";
 import type { Person } from "@/types/models";
 import { createAsyncStore } from "./asyncStore";
+import { tripsStore } from "./tripsStore";
 
 const PERSONS_KEY = "@bills/persons";
 
@@ -24,6 +25,17 @@ export function renamePerson(id: string, name: string) {
   if (!next) return;
   personsStore.set((prev) =>
     prev.map((p) => (p.id === id ? { ...p, name: next } : p)),
+  );
+  // Cascade the new name into every trip-Member linked to this Person, so
+  // renaming a friend updates them everywhere they appear — trip rosters,
+  // expense rows, settlement summary, etc. All those screens read Member.name.
+  tripsStore.set((prev) =>
+    prev.map((t) => ({
+      ...t,
+      members: t.members.map((m) =>
+        m.personId === id ? { ...m, name: next } : m,
+      ),
+    })),
   );
 }
 
