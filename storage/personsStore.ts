@@ -20,6 +20,26 @@ export function createPerson(name: string): Person {
   return person;
 }
 
+/**
+ * Resolve a Person for `name`, creating one if no case-insensitive match exists.
+ * Use this when an in-app flow takes a free-text name and needs to make sure
+ * that person is reflected in the global directory (e.g., adding a member to
+ * an existing trip).
+ */
+export function findOrCreatePerson(name: string): Person {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    // Caller is expected to validate non-empty first; defensive fallback.
+    return createPerson(trimmed);
+  }
+  const key = trimmed.toLowerCase();
+  const existing = personsStore
+    .getSnapshot()
+    .find((p) => p.name.trim().toLowerCase() === key);
+  if (existing) return existing;
+  return createPerson(trimmed);
+}
+
 export function renamePerson(id: string, name: string) {
   const next = name.trim();
   if (!next) return;

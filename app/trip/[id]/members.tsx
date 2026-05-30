@@ -17,6 +17,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import { useExpenses, useTrip } from "@/hooks/useTrips";
+import { findOrCreatePerson } from "@/storage/personsStore";
 import { addMember, removeMember } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
 
@@ -61,7 +62,8 @@ export default function MembersScreen() {
       setError("Someone with that name is already on this trip");
       return;
     }
-    addMember(trip.id, name);
+    const person = findOrCreatePerson(name);
+    addMember(trip.id, name, person.id);
     setDraft("");
     setError(undefined);
     Haptics.notificationAsync(

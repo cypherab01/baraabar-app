@@ -86,7 +86,7 @@ export function reopenTrip(id: string) {
   updateTrip(id, { closedAt: undefined });
 }
 
-export function addMember(tripId: string, name: string) {
+export function addMember(tripId: string, name: string, personId?: string) {
   const trimmed = name.trim();
   if (!trimmed) return;
   tripsStore.set((prev) =>
@@ -94,7 +94,14 @@ export function addMember(tripId: string, name: string) {
       t.id === tripId
         ? {
             ...t,
-            members: [...t.members, { id: nanoid(8), name: trimmed }],
+            members: [
+              ...t.members,
+              {
+                id: nanoid(8),
+                name: trimmed,
+                ...(personId ? { personId } : {}),
+              },
+            ],
           }
         : t,
     ),
