@@ -80,8 +80,10 @@ export default function HomeScreen() {
       {trips.length > 0 ? (
         <FAB
           icon="add"
+          label="Add trip"
+          size="lg"
           onPress={() => router.push("/trip/new" as never)}
-          accessibilityLabel="New trip"
+          accessibilityLabel="Add trip"
         />
       ) : null}
     </Screen>

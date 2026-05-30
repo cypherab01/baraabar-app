@@ -35,9 +35,10 @@ export function FAB({
   const diameter = size === "lg" ? 64 : 56;
   const iconSize = size === "lg" ? 28 : 26;
 
-  const bottomInset = tabBarHeight
-    ? tabBarHeight + theme.spacing.md
-    : Math.max(insets.bottom, theme.spacing.md) + theme.spacing.lg;
+  const bottomInset =
+    tabBarHeight != null
+      ? theme.spacing.lg
+      : Math.max(insets.bottom, theme.spacing.md) + theme.spacing.lg;
 
   return (
     <View
