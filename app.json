@@ -19,7 +19,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.cypherab01.baraabar",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [],
       "blockedPermissions": [
         "android.permission.INTERNET",

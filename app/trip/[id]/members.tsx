@@ -226,7 +226,7 @@ export default function MembersScreen() {
             </Pressable>
           </View>
           <Text variant="caption" tone="subtle">
-            New people start at 0. Existing expenses aren&apos;t rebalanced
+            New people start at Rs. 0. Existing expenses aren&apos;t rebalanced
             automatically.
           </Text>
 
