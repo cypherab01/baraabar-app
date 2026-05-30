@@ -15,7 +15,7 @@ import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import { usePersons } from "@/hooks/usePersons";
 import { useTrips } from "@/hooks/useTrips";
-import { createPerson, personsStore } from "@/storage/personsStore";
+import { createPerson } from "@/storage/personsStore";
 import { createTrip } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
 
@@ -70,9 +70,9 @@ export default function NewTripScreen() {
   const addNew = () => {
     const trimmed = newName.trim();
     if (!trimmed) return;
-    const exists = personsStore
-      .getSnapshot()
-      .find((p) => p.name.trim().toLowerCase() === trimmed.toLowerCase());
+    const exists = persons.find(
+      (p) => p.name.trim().toLowerCase() === trimmed.toLowerCase(),
+    );
     if (exists) {
       Alert.alert(
         "Already added",
