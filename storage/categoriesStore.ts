@@ -10,6 +10,13 @@ export const categoriesStore = createAsyncStore<Category[]>({
   initial: [],
 });
 
+/** Sentence-case for labels: first letter uppercased, rest preserved exactly. */
+function sentenceCase(s: string): string {
+  const t = s.trim();
+  if (!t) return t;
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
 export function seedDefaultCategoriesIfEmpty() {
   if (categoriesStore.getSnapshot().length === 0) {
     categoriesStore.replace([...DEFAULT_CATEGORIES]);
@@ -22,7 +29,7 @@ export function createCategory(input: {
 }): Category {
   const category: Category = {
     id: nanoid(8),
-    label: input.label.trim(),
+    label: sentenceCase(input.label),
     emoji: input.emoji,
     isDefault: false,
   };
@@ -34,8 +41,12 @@ export function updateCategory(
   id: string,
   patch: Partial<Pick<Category, "label" | "emoji" | "archivedAt">>,
 ) {
+  const normalized: typeof patch =
+    patch.label !== undefined
+      ? { ...patch, label: sentenceCase(patch.label) }
+      : patch;
   categoriesStore.set((prev) =>
-    prev.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    prev.map((c) => (c.id === id ? { ...c, ...normalized } : c)),
   );
 }
 

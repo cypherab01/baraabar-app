@@ -10,10 +10,20 @@ export const personsStore = createAsyncStore<Person[]>({
   initial: [],
 });
 
+/** Title-case for names: capitalize the first letter of every whitespace-split word; preserve interior case the user typed. */
+function capitalizeWords(s: string): string {
+  return s
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length > 0)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export function createPerson(name: string): Person {
   const person: Person = {
     id: nanoid(10),
-    name: name.trim(),
+    name: capitalizeWords(name),
     createdAt: Date.now(),
   };
   personsStore.set((prev) => [person, ...prev]);
@@ -60,7 +70,7 @@ export function setPersonArchived(id: string, archived: boolean) {
 }
 
 export function renamePerson(id: string, name: string) {
-  const next = name.trim();
+  const next = capitalizeWords(name);
   if (!next) return;
   personsStore.set((prev) =>
     prev.map((p) => (p.id === id ? { ...p, name: next } : p)),

@@ -1,12 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert, Pressable, TextInput, View } from "react-native";
-import {
-  KeyboardAwareScrollView,
-  KeyboardStickyView,
-} from "react-native-keyboard-controller";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -20,6 +11,15 @@ import { useExpenses, useTrip } from "@/hooks/useTrips";
 import { findOrCreatePerson } from "@/storage/personsStore";
 import { addMember, removeMember } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
+import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useRef, useState } from "react";
+import { Alert, Pressable, TextInput, View } from "react-native";
+import {
+  KeyboardAwareScrollView,
+  KeyboardStickyView,
+} from "react-native-keyboard-controller";
 
 export default function MembersScreen() {
   const theme = useTheme();
@@ -54,22 +54,32 @@ export default function MembersScreen() {
       setError("Enter a name");
       return;
     }
-    if (
-      trip.members.some(
-        (m) => m.name.toLowerCase() === name.toLowerCase(),
-      )
-    ) {
+    if (trip.members.some((m) => m.name.toLowerCase() === name.toLowerCase())) {
       setError("Someone with that name is already on this trip");
       return;
     }
     const person = findOrCreatePerson(name);
-    addMember(trip.id, name, person.id);
+    addMember(trip.id, person.name, person.id);
     setDraft("");
     setError(undefined);
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success,
-    ).catch(() => {});
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
     inputRef.current?.focus();
+  };
+
+  const handleDone = () => {
+    const pending = draft.trim();
+    if (pending) {
+      const isDup = trip.members.some(
+        (m) => m.name.toLowerCase() === pending.toLowerCase(),
+      );
+      if (!isDup) {
+        const person = findOrCreatePerson(pending);
+        addMember(trip.id, person.name, person.id);
+      }
+    }
+    router.back();
   };
 
   const handleRemove = (memberId: string, name: string) => {
@@ -203,11 +213,7 @@ export default function MembersScreen() {
                 opacity: pressed ? 0.9 : 1,
               })}
             >
-              <Ionicons
-                name="add"
-                size={18}
-                color={theme.colors.accentText}
-              />
+              <Ionicons name="add" size={18} color={theme.colors.accentText} />
               <Text
                 style={{
                   color: theme.colors.accentText,
@@ -220,8 +226,15 @@ export default function MembersScreen() {
             </Pressable>
           </View>
           <Text variant="caption" tone="subtle">
-            New people start at ₀. Existing expenses aren&apos;t rebalanced automatically.
+            New people start at 0. Existing expenses aren&apos;t rebalanced
+            automatically.
           </Text>
+
+          {draft.trim() ? (
+            <Text variant="caption" tone="muted">
+              “{draft.trim()}” will be added when you tap Done.
+            </Text>
+          ) : null}
         </View>
       </KeyboardAwareScrollView>
 
@@ -232,7 +245,7 @@ export default function MembersScreen() {
             backgroundColor: theme.colors.bg,
           }}
         >
-          <Button label="Done" size="lg" block onPress={() => router.back()} />
+          <Button label="Done" size="lg" block onPress={handleDone} />
         </View>
       </KeyboardStickyView>
     </Screen>
