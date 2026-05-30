@@ -17,32 +17,28 @@ export const CURRENCY_OPTIONS: CurrencyOption[] = [
   { code: "CAD", symbol: "C$", label: "Canadian Dollar" },
 ];
 
-export type CategoryKey =
-  | "food"
-  | "transport"
-  | "stay"
-  | "activities"
-  | "shopping"
-  | "other";
-
-export interface CategoryMeta {
-  key: CategoryKey;
-  label: string;
-  emoji: string;
+export interface Person {
+  id: string;
+  name: string;
+  createdAt: number;
 }
 
-export const CATEGORIES: CategoryMeta[] = [
-  { key: "food", label: "Food", emoji: "🍽️" },
-  { key: "transport", label: "Transport", emoji: "🚖" },
-  { key: "stay", label: "Stay", emoji: "🏨" },
-  { key: "activities", label: "Activities", emoji: "🎟️" },
-  { key: "shopping", label: "Shopping", emoji: "🛍️" },
-  { key: "other", label: "Other", emoji: "✨" },
-];
+export interface Category {
+  id: string;
+  label: string;
+  emoji: string;
+  isDefault: boolean;
+  archivedAt?: number;
+}
+
+export interface AppSettings {
+  themeMode: "system" | "light" | "dark";
+}
 
 export interface Member {
   id: string;
   name: string;
+  personId?: string;
 }
 
 export interface Trip {
@@ -59,9 +55,26 @@ export interface Expense {
   tripId: string;
   payerId: string;
   amount: number;
-  category: CategoryKey;
-  customCategoryLabel?: string;
+  categoryId: string;
   note?: string;
   createdAt: number;
   splitWith?: string[];
 }
+
+export const DEFAULT_CATEGORIES: Category[] = [
+  { id: "food", label: "Food", emoji: "🍽️", isDefault: true },
+  { id: "transport", label: "Transport", emoji: "🚖", isDefault: true },
+  { id: "stay", label: "Stay", emoji: "🏨", isDefault: true },
+  { id: "ticket", label: "Ticket", emoji: "🎟️", isDefault: true },
+];
+
+export const LEGACY_CATEGORY_META: Record<
+  string,
+  { label: string; emoji: string }
+> = {
+  activities: { label: "Activities", emoji: "🎟️" },
+  shopping: { label: "Shopping", emoji: "🛍️" },
+  other: { label: "Other", emoji: "✨" },
+};
+
+export const DEFAULT_SETTINGS: AppSettings = { themeMode: "system" };

@@ -1,7 +1,8 @@
 import { Pressable, View } from "react-native";
+import { useCategoriesById } from "@/hooks/useCategories";
 import { formatAmount, formatRelativeDate } from "@/lib/format";
 import { useTheme } from "@/theme";
-import { CATEGORIES, type CategoryKey, type Expense, type Member } from "@/types/models";
+import type { Expense, Member } from "@/types/models";
 import { CategoryIcon } from "./CategoryIcon";
 import { Text } from "./Text";
 
@@ -13,10 +14,6 @@ interface ExpenseRowProps {
   onLongPress?: () => void;
 }
 
-const categoryLabel = (key: CategoryKey): string => {
-  return CATEGORIES.find((c) => c.key === key)?.label ?? "Other";
-};
-
 export function ExpenseRow({
   expense,
   members,
@@ -25,11 +22,10 @@ export function ExpenseRow({
   onLongPress,
 }: ExpenseRowProps) {
   const theme = useTheme();
+  const byId = useCategoriesById();
+  const cat = byId.get(expense.categoryId);
+  const label = cat?.label ?? "Unknown";
   const payer = members.find((m) => m.id === expense.payerId);
-  const label =
-    expense.category === "other" && expense.customCategoryLabel
-      ? expense.customCategoryLabel
-      : categoryLabel(expense.category);
   const splitWithLabel = expense.splitWith
     ? buildSplitWithLabel(expense.splitWith, members)
     : null;
@@ -53,7 +49,7 @@ export function ExpenseRow({
           borderColor: theme.colors.border,
         }}
       >
-        <CategoryIcon category={expense.category} size={44} />
+        <CategoryIcon categoryId={expense.categoryId} size={44} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="bodyMedium" numberOfLines={1}>
             {label}

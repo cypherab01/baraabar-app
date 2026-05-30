@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { nanoid } from "nanoid/non-secure";
-import type { Expense, Trip } from "@/types/models";
+import type { Expense, Member, Trip } from "@/types/models";
 import { createAsyncStore } from "./asyncStore";
 
 const TRIPS_KEY = "@bills/trips";
@@ -28,10 +28,15 @@ export function expensesStoreFor(tripId: string) {
   return store;
 }
 
+export interface NewTripMemberInput {
+  personId?: string;
+  name: string;
+}
+
 export interface NewTripInput {
   name: string;
   currency: string;
-  memberNames: string[];
+  members: NewTripMemberInput[];
 }
 
 export function createTrip(input: NewTripInput): Trip {
@@ -40,14 +45,19 @@ export function createTrip(input: NewTripInput): Trip {
     id: nanoid(10),
     name: input.name.trim(),
     currency: input.currency,
-    members: input.memberNames
-      .map((n) => n.trim())
-      .filter(Boolean)
-      .map((name) => ({ id: nanoid(8), name })),
+    members: input.members
+      .map((m) => ({ ...m, name: m.name.trim() }))
+      .filter((m) => m.name.length > 0)
+      .map(
+        (m): Member => ({
+          id: nanoid(8),
+          name: m.name,
+          ...(m.personId ? { personId: m.personId } : {}),
+        }),
+      ),
     createdAt: now,
   };
   tripsStore.set((prev) => [trip, ...prev]);
-  // Prime the expense store so subscribers get an empty array snapshot
   expensesStoreFor(trip.id);
   return trip;
 }
@@ -161,8 +171,7 @@ export interface NewExpenseInput {
   tripId: string;
   payerId: string;
   amount: number;
-  category: Expense["category"];
-  customCategoryLabel?: string;
+  categoryId: string;
   note?: string;
   splitWith?: string[];
 }
@@ -173,11 +182,13 @@ export function addExpense(input: NewExpenseInput): Expense {
     tripId: input.tripId,
     payerId: input.payerId,
     amount: input.amount,
-    category: input.category,
-    customCategoryLabel: input.customCategoryLabel?.trim() || undefined,
+    categoryId: input.categoryId,
     note: input.note?.trim() || undefined,
     createdAt: Date.now(),
-    splitWith: input.splitWith && input.splitWith.length > 0 ? input.splitWith : undefined,
+    splitWith:
+      input.splitWith && input.splitWith.length > 0
+        ? input.splitWith
+        : undefined,
   };
   expensesStoreFor(input.tripId).set((prev) => [expense, ...prev]);
   return expense;

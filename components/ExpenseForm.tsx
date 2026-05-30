@@ -10,7 +10,6 @@ import {
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
-import { CategoryIcon } from "@/components/CategoryIcon";
 import { IconButton } from "@/components/IconButton";
 import { MemberAvatar } from "@/components/MemberAvatar";
 import { Screen } from "@/components/Screen";
@@ -23,12 +22,8 @@ import {
   updateExpense,
 } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
-import {
-  CATEGORIES,
-  type CategoryKey,
-  type Expense,
-  type Trip,
-} from "@/types/models";
+import { useCategories } from "@/hooks/useCategories";
+import type { Expense, Trip } from "@/types/models";
 
 interface ExpenseFormProps {
   trip: Trip;
@@ -45,11 +40,8 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
   const [payerId, setPayerId] = useState<string | undefined>(
     existing?.payerId ?? trip.members[0]?.id,
   );
-  const [category, setCategory] = useState<CategoryKey>(
-    existing?.category ?? "food",
-  );
-  const [customLabel, setCustomLabel] = useState(
-    existing?.customCategoryLabel ?? "",
+  const [categoryId, setCategoryId] = useState<string>(
+    existing?.categoryId ?? "food",
   );
   const [note, setNote] = useState(existing?.note ?? "");
   const [submitted, setSubmitted] = useState(false);
@@ -70,10 +62,6 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
       ? "Enter an amount greater than 0"
       : undefined;
   const payerError = submitted && !payerId ? "Select who paid" : undefined;
-  const customLabelError =
-    submitted && category === "other" && !customLabel.trim()
-      ? "Give this expense a name"
-      : undefined;
 
   const selectedCount = splitEveryone ? trip.members.length : selectedSplitIds.size;
 
@@ -81,7 +69,6 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
     parsedAmount != null &&
     parsedAmount > 0 &&
     Boolean(payerId) &&
-    (category !== "other" || customLabel.trim().length > 0) &&
     selectedCount > 0;
 
   const perShare =
@@ -117,9 +104,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
       updateExpense(trip.id, existing.id, {
         amount: parsedAmount,
         payerId,
-        category,
-        customCategoryLabel:
-          category === "other" ? customLabel.trim() : undefined,
+        categoryId,
         note: note.trim() || undefined,
         splitWith,
       });
@@ -128,9 +113,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
         tripId: trip.id,
         amount: parsedAmount,
         payerId,
-        category,
-        customCategoryLabel:
-          category === "other" ? customLabel.trim() : undefined,
+        categoryId,
         note: note.trim() || undefined,
         splitWith,
       });
@@ -284,64 +267,11 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
             <Text variant="label" tone="muted">
               Category
             </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 10,
-              }}
-            >
-              {CATEGORIES.map((c) => {
-                const active = c.key === category;
-                return (
-                  <Pressable
-                    key={c.key}
-                    onPress={() => {
-                      setCategory(c.key);
-                      Haptics.selectionAsync().catch(() => {});
-                    }}
-                    style={{ alignItems: "center", gap: 6, width: 72 }}
-                  >
-                    <View
-                      style={{
-                        padding: 4,
-                        borderRadius: theme.radii.lg,
-                        borderWidth: 2,
-                        borderColor: active
-                          ? theme.colors.accent
-                          : "transparent",
-                      }}
-                    >
-                      <CategoryIcon category={c.key} size={44} />
-                    </View>
-                    <Text
-                      variant="caption"
-                      style={{
-                        color: active
-                          ? theme.colors.accent
-                          : theme.colors.textMuted,
-                        fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium",
-                      }}
-                    >
-                      {c.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-
-          {category === "other" ? (
-            <TextField
-              label="What was it for?"
-              placeholder="e.g. Laundry"
-              value={customLabel}
-              onChangeText={setCustomLabel}
-              maxLength={40}
-              autoCapitalize="sentences"
-              error={customLabelError}
+            <CategoryChips
+              categoryId={categoryId}
+              setCategoryId={setCategoryId}
             />
-          ) : null}
+          </View>
 
           <TextField
             label="Note (optional)"
@@ -500,6 +430,86 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
         </View>
       </KeyboardStickyView>
     </Screen>
+  );
+}
+
+interface CategoryChipsProps {
+  categoryId: string;
+  setCategoryId: (id: string) => void;
+}
+
+function CategoryChips({ categoryId, setCategoryId }: CategoryChipsProps) {
+  const theme = useTheme();
+  const categories = useCategories();
+  const visibleCategories = categories.filter((c) => !c.archivedAt);
+  const selectedArchived = categories.find((c) => c.id === categoryId)?.archivedAt;
+
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 10,
+      }}
+    >
+      {selectedArchived ? (
+        <Pressable
+          key="__archived__"
+          style={{
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+            borderRadius: theme.radii.pill,
+            backgroundColor: theme.colors.accentSoft,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            opacity: 0.75,
+          }}
+          onPress={() => {}}
+        >
+          <Text>
+            {categories.find((c) => c.id === categoryId)?.emoji ?? "•"}{" "}
+            {categories.find((c) => c.id === categoryId)?.label ?? "Unknown"}{" "}
+            (archived)
+          </Text>
+        </Pressable>
+      ) : null}
+      {visibleCategories.map((c) => {
+        const isActive = c.id === categoryId;
+        return (
+          <Pressable
+            key={c.id}
+            onPress={() => {
+              setCategoryId(c.id);
+              Haptics.selectionAsync().catch(() => {});
+            }}
+            style={{
+              paddingHorizontal: 14,
+              paddingVertical: 10,
+              borderRadius: theme.radii.pill,
+              backgroundColor: isActive
+                ? theme.colors.accent
+                : theme.colors.surface,
+              borderWidth: 1,
+              borderColor: isActive
+                ? theme.colors.accent
+                : theme.colors.borderStrong,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Text
+              style={{
+                color: isActive ? theme.colors.accentText : theme.colors.text,
+              }}
+            >
+              {c.emoji} {c.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
   );
 }
 

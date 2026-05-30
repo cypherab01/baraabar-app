@@ -15,10 +15,18 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  categoriesStore,
+  seedDefaultCategoriesIfEmpty,
+} from "@/storage/categoriesStore";
+import { migrationsStore, runV1Migration } from "@/storage/migrations";
+import { personsStore } from "@/storage/personsStore";
+import { settingsStore } from "@/storage/settingsStore";
+import { tripsStore } from "@/storage/tripsStore";
 import { ThemeProvider, useTheme } from "@/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -84,13 +92,40 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  const [bootstrapped, setBootstrapped] = useState(false);
+
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    let cancelled = false;
+    (async () => {
+      await Promise.all([
+        tripsStore.ready,
+        personsStore.ready,
+        categoriesStore.ready,
+        settingsStore.ready,
+        migrationsStore.ready,
+      ]);
+      seedDefaultCategoriesIfEmpty();
+      try {
+        await runV1Migration();
+      } catch (err) {
+        console.warn("[bootstrap] v1 migration failed", err);
+      }
+      if (!cancelled) setBootstrapped(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const ready = (fontsLoaded || fontError) && bootstrapped;
+
+  useEffect(() => {
+    if (ready) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [ready]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

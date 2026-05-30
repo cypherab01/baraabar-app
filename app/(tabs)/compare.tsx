@@ -7,15 +7,16 @@ import { EmptyState } from "@/components/EmptyState";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { useAllExpenses } from "@/hooks/useAllExpenses";
+import { useCategories } from "@/hooks/useCategories";
 import { useTrips } from "@/hooks/useTrips";
 import { formatAmount, formatAmountCompact } from "@/lib/format";
 import { useTheme } from "@/theme";
-import { CATEGORIES, type CategoryKey } from "@/types/models";
 
 export default function CompareScreen() {
   const theme = useTheme();
   const trips = useTrips();
   const expensesByTrip = useAllExpenses(trips);
+  const categories = useCategories();
 
   const dominantCurrency = useMemo(() => {
     const counts = new Map<string, number>();
@@ -35,15 +36,15 @@ export default function CompareScreen() {
 
   const { tripStats, overallTotal, categoryTotals } = useMemo(() => {
     let total = 0;
-    const byCategory = new Map<CategoryKey, number>();
+    const byCategory = new Map<string, number>();
     const stats = trips.map((t) => {
       const expenses = expensesByTrip[t.id] ?? [];
       const tripTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
       total += tripTotal;
       for (const e of expenses) {
         byCategory.set(
-          e.category,
-          (byCategory.get(e.category) ?? 0) + e.amount,
+          e.categoryId,
+          (byCategory.get(e.categoryId) ?? 0) + e.amount,
         );
       }
       return {
@@ -73,19 +74,20 @@ export default function CompareScreen() {
         : `${s.expenseCount} expense${s.expenseCount === 1 ? "" : "s"} · ${s.trip.members.length} people`,
   }));
 
-  const categoryChartData: BarChartDatum[] = CATEGORIES.map((c) => {
-    const amount = categoryTotals.get(c.key) ?? 0;
-    const share = overallTotal > 0 ? (amount / overallTotal) * 100 : 0;
-    return {
-      key: c.key,
-      label: c.label,
-      emoji: c.emoji,
-      value: amount,
-      formattedValue:
-        amount > 0 ? formatAmountCompact(amount, dominantCurrency) : "—",
-      caption: amount > 0 ? `${share.toFixed(0)}% of total` : undefined,
-    };
-  })
+  const categoryChartData: BarChartDatum[] = categories
+    .filter((c) => !c.archivedAt || categoryTotals.has(c.id))
+    .map((c) => {
+      const amount = categoryTotals.get(c.id) ?? 0;
+      const share = overallTotal > 0 ? (amount / overallTotal) * 100 : 0;
+      return {
+        key: c.id,
+        label: `${c.emoji} ${c.label}`,
+        value: amount,
+        formattedValue:
+          amount > 0 ? formatAmountCompact(amount, dominantCurrency) : "—",
+        caption: amount > 0 ? `${share.toFixed(0)}% of total` : undefined,
+      };
+    })
     .filter((d) => d.value > 0)
     .sort((a, b) => b.value - a.value);
 

@@ -67,7 +67,7 @@ export default function NewTripScreen() {
     const trip = createTrip({
       name,
       currency: DEFAULT_CURRENCY,
-      memberNames: members.map((m) => m.name),
+      members: members.map((m) => ({ name: m.name })),
     });
     router.replace(`/trip/${trip.id}` as never);
   };
