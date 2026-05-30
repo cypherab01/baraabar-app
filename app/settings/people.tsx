@@ -19,7 +19,6 @@ import { useTrips } from "@/hooks/useTrips";
 import {
   createPerson,
   deletePerson,
-  personsStore,
   renamePerson,
 } from "@/storage/personsStore";
 import { tripsStore } from "@/storage/tripsStore";
@@ -122,9 +121,9 @@ export default function PeopleScreen() {
   const saveNew = () => {
     const next = draftName.trim();
     if (!next) return;
-    const exists = personsStore
-      .getSnapshot()
-      .some((p) => p.name.trim().toLowerCase() === next.toLowerCase());
+    const exists = persons.some(
+      (p) => p.name.trim().toLowerCase() === next.toLowerCase(),
+    );
     if (exists) {
       Alert.alert("Already added", `Someone named "${next}" already exists.`);
       return;
@@ -257,7 +256,12 @@ export default function PeopleScreen() {
               <Text variant="heading">
                 {editing ? "Edit person" : "Add person"}
               </Text>
-              <IconButton variant="soft" size={36} onPress={closeSheet}>
+              <IconButton
+                variant="soft"
+                size={36}
+                onPress={closeSheet}
+                accessibilityLabel="Close"
+              >
                 <Ionicons name="close" size={18} color={theme.colors.text} />
               </IconButton>
             </View>
@@ -274,6 +278,9 @@ export default function PeopleScreen() {
             {editing ? (
               <Pressable
                 onPress={() => setCascadeRename((v) => !v)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: cascadeRename }}
+                accessibilityLabel="Also rename in all trips"
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
