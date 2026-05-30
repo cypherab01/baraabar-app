@@ -63,4 +63,5 @@ export interface Expense {
   customCategoryLabel?: string;
   note?: string;
   createdAt: number;
+  splitWith?: string[];
 }
