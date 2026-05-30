@@ -1,6 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DEFAULT_SETTINGS } from "@/types/models";
-import { categoriesStore } from "./categoriesStore";
+import {
+  categoriesStore,
+  seedDefaultCategoriesIfEmpty,
+} from "./categoriesStore";
 import { migrationsStore } from "./migrations";
 import { personsStore } from "./personsStore";
 import { settingsStore } from "./settingsStore";
@@ -20,4 +23,5 @@ export async function clearAllData(): Promise<void> {
   categoriesStore.replace([]);
   settingsStore.replace(DEFAULT_SETTINGS);
   migrationsStore.replace({});
+  seedDefaultCategoriesIfEmpty();
 }

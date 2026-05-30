@@ -24,7 +24,7 @@ EAS build profiles in `eas.json`: `development` (dev client, internal), `preview
 
 ### Routing — expo-router with typed routes
 
-File-based routing under `app/`. The root `app/_layout.tsx` declares the Stack and which screens are presented as modals. Modal screens: `trip/new`, `trip/[id]/members`, `trip/[id]/expense/new`, `trip/[id]/expense/[expenseId]`. Tabs live under `app/(tabs)/` (Trips / Compare / About).
+File-based routing under `app/`. The root `app/_layout.tsx` declares the Stack and which screens are presented as modals. Modal screens: `trip/new`, `trip/[id]/members`, `trip/[id]/expense/new`, `trip/[id]/expense/[expenseId]`. Tabs live under `app/(tabs)/` (Trips / Compare / More).
 
 `typedRoutes` and `reactCompiler` are enabled experiments in `app.json`; `newArchEnabled: true`. Don't add babel/reanimated config that conflicts with the React Compiler — it's on by default for this project.
 
