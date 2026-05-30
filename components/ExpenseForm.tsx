@@ -91,10 +91,7 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
 
   const toggleSplitEveryone = (next: boolean) => {
     setSplitEveryone(next);
-    if (!next) {
-      // entering partial mode: pre-select all members
-      setSelectedSplitIds(new Set(trip.members.map((m) => m.id)));
-    }
+    setSelectedSplitIds(new Set(trip.members.map((m) => m.id)));
     Haptics.selectionAsync().catch(() => {});
   };
 
@@ -358,6 +355,9 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
           <View style={{ gap: theme.spacing.sm }}>
             <Pressable
               onPress={() => toggleSplitEveryone(!splitEveryone)}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: splitEveryone }}
+              accessibilityLabel="Split equally with everyone"
               style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -407,7 +407,12 @@ export function ExpenseForm({ trip, existing }: ExpenseFormProps) {
                   {trip.members.map((m) => {
                     const active = selectedSplitIds.has(m.id);
                     return (
-                      <Pressable key={m.id} onPress={() => toggleSplitMember(m.id)}>
+                      <Pressable
+                        key={m.id}
+                        onPress={() => toggleSplitMember(m.id)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: active }}
+                      >
                         <View
                           style={{
                             flexDirection: "row",
