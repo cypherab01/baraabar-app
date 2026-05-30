@@ -92,17 +92,29 @@ export async function runV1Migration(): Promise<void> {
       let categoryId: string;
 
       if (e.customCategoryLabel) {
-        const id = nanoid(8);
         const label = e.customCategoryLabel.trim() || "Other";
-        const cat: Category = {
-          id,
-          label,
-          emoji: "✨",
-          isDefault: false,
-        };
-        newCategories.push(cat);
-        categoryById.set(id, cat);
-        categoryId = id;
+        const labelKey = label.toLowerCase();
+        let existing: Category | undefined;
+        for (const cat of categoryById.values()) {
+          if (cat.label.toLowerCase() === labelKey) {
+            existing = cat;
+            break;
+          }
+        }
+        if (existing) {
+          categoryId = existing.id;
+        } else {
+          const id = nanoid(8);
+          const cat: Category = {
+            id,
+            label,
+            emoji: "✨",
+            isDefault: false,
+          };
+          newCategories.push(cat);
+          categoryById.set(id, cat);
+          categoryId = id;
+        }
       } else if (legacyKey && !categoryById.has(legacyKey)) {
         const meta =
           LEGACY_CATEGORY_META[legacyKey] ??
@@ -143,6 +155,9 @@ export async function runV1Migration(): Promise<void> {
   migrationsStore.set((prev) => ({ ...prev, [V1_FLAG]: true }));
 }
 
+// Used by the JSON backup importer after a Replace operation: the imported
+// data is already in post-migration shape, so re-setting the flag avoids
+// a no-op re-run on next launch.
 export function preserveV1MigrationFlag() {
   migrationsStore.set((prev) => ({ ...prev, [V1_FLAG]: true }));
 }

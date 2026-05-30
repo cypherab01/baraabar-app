@@ -3,11 +3,6 @@ import { useCategoriesById } from "@/hooks/useCategories";
 import { useTheme } from "@/theme";
 import { Text } from "./Text";
 
-const ACCENT_TINT: Record<"light" | "dark", string> = {
-  light: "#E6ECFF",
-  dark: "#22284A",
-};
-
 interface CategoryIconProps {
   categoryId: string;
   size?: number;
@@ -18,7 +13,6 @@ export function CategoryIcon({ categoryId, size = 36 }: CategoryIconProps) {
   const byId = useCategoriesById();
   const cat = byId.get(categoryId);
   const emoji = cat?.emoji ?? "•";
-  const bg = ACCENT_TINT[theme.scheme];
 
   return (
     <View
@@ -26,7 +20,7 @@ export function CategoryIcon({ categoryId, size = 36 }: CategoryIconProps) {
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: bg,
+        backgroundColor: theme.colors.accentSoft,
         alignItems: "center",
         justifyContent: "center",
       }}

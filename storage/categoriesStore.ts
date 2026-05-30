@@ -62,10 +62,11 @@ export function resetCategoryToDefault(id: string) {
   const def = DEFAULT_CATEGORIES.find((c) => c.id === id);
   if (!def) return;
   categoriesStore.set((prev) =>
-    prev.map((c) =>
-      c.id === id
-        ? { ...c, label: def.label, emoji: def.emoji, archivedAt: undefined }
-        : c,
-    ),
+    prev.map((c) => {
+      if (c.id !== id) return c;
+      const next: Category = { ...c, label: def.label, emoji: def.emoji };
+      delete next.archivedAt;
+      return next;
+    }),
   );
 }

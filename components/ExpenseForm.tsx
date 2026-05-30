@@ -443,6 +443,9 @@ function CategoryChips({ categoryId, setCategoryId }: CategoryChipsProps) {
   const categories = useCategories();
   const visibleCategories = categories.filter((c) => !c.archivedAt);
   const selectedArchived = categories.find((c) => c.id === categoryId)?.archivedAt;
+  const selectedCategory = selectedArchived
+    ? categories.find((c) => c.id === categoryId)
+    : null;
 
   return (
     <View
@@ -468,8 +471,8 @@ function CategoryChips({ categoryId, setCategoryId }: CategoryChipsProps) {
           onPress={() => {}}
         >
           <Text>
-            {categories.find((c) => c.id === categoryId)?.emoji ?? "•"}{" "}
-            {categories.find((c) => c.id === categoryId)?.label ?? "Unknown"}{" "}
+            {selectedCategory?.emoji ?? "•"}{" "}
+            {selectedCategory?.label ?? "Unknown"}{" "}
             (archived)
           </Text>
         </Pressable>
