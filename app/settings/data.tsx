@@ -10,7 +10,6 @@ import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import {
   BackupCancelledError,
-  BackupError,
   exportToFile,
   importMerge,
   importReplace,
