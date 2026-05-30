@@ -1,14 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
-import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
-import { useState } from "react";
 import { Alert, Pressable, ScrollView, View } from "react-native";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { DEVELOPER, type SocialLink } from "@/constants/developer";
-import { clearAllData } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
 
 const SOCIAL_ICON: Record<SocialLink["key"], React.ComponentProps<typeof Ionicons>["name"]> = {
@@ -19,9 +16,8 @@ const SOCIAL_ICON: Record<SocialLink["key"], React.ComponentProps<typeof Ionicon
   twitter: "logo-twitter",
 };
 
-export default function ProfileScreen() {
+export default function AboutScreen() {
   const theme = useTheme();
-  const [clearing, setClearing] = useState(false);
 
   const openURL = async (url: string) => {
     if (!url) {
@@ -37,34 +33,9 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleClear = () => {
-    Alert.alert(
-      "Clear all data?",
-      "This will permanently delete every trip, expense, and member on this device. This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clear everything",
-          style: "destructive",
-          onPress: async () => {
-            setClearing(true);
-            try {
-              await clearAllData();
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              ).catch(() => {});
-            } finally {
-              setClearing(false);
-            }
-          },
-        },
-      ],
-    );
-  };
-
   return (
     <Screen edges={["top", "left", "right"]}>
-      <AppHeader title="About" subtitle="App & developer info" />
+      <AppHeader title="About" subtitle="App & developer info" showBack />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -175,57 +146,6 @@ export default function ProfileScreen() {
                 ))}
               </View>
             </View>
-          </Card>
-        </View>
-
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="overline" tone="subtle">
-            Danger zone
-          </Text>
-          <Card padded>
-            <Text variant="bodyMedium">Clear all data</Text>
-            <Text
-              variant="caption"
-              tone="muted"
-              style={{ marginTop: 4, marginBottom: theme.spacing.md }}
-            >
-              Delete every trip and expense and start fresh. This only affects
-              this device — nothing is stored online.
-            </Text>
-            <Pressable
-              onPress={handleClear}
-              disabled={clearing}
-              android_ripple={{ color: theme.colors.negativeSoft }}
-              style={({ pressed }) => ({
-                height: 48,
-                borderRadius: theme.radii.md,
-                backgroundColor: theme.colors.negativeSoft,
-                borderWidth: 1,
-                borderColor: theme.colors.negative,
-                alignItems: "center",
-                justifyContent: "center",
-                flexDirection: "row",
-                gap: 8,
-                opacity: pressed || clearing ? 0.7 : 1,
-              })}
-              accessibilityRole="button"
-              accessibilityLabel="Clear all data"
-            >
-              <Ionicons
-                name="trash-outline"
-                size={18}
-                color={theme.colors.negative}
-              />
-              <Text
-                style={{
-                  color: theme.colors.negative,
-                  fontFamily: "Inter_600SemiBold",
-                  fontSize: 15,
-                }}
-              >
-                {clearing ? "Clearing..." : "Clear all data"}
-              </Text>
-            </Pressable>
           </Card>
         </View>
 
