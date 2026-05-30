@@ -75,12 +75,19 @@ export async function exportToFile(): Promise<void> {
 
 export class BackupError extends Error {}
 
+export class BackupCancelledError extends BackupError {
+  constructor() {
+    super("Import canceled.");
+    this.name = "BackupCancelledError";
+  }
+}
+
 export async function pickAndReadBackup(): Promise<BackupV1> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ["application/json", "*/*"],
     copyToCacheDirectory: true,
   });
-  if (result.canceled) throw new BackupError("Import canceled.");
+  if (result.canceled) throw new BackupCancelledError();
   const file = result.assets?.[0];
   if (!file) throw new BackupError("No file selected.");
   let raw: string;

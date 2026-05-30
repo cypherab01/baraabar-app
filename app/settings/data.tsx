@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, View } from "react-native";
+import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -9,6 +9,7 @@ import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import {
+  BackupCancelledError,
   BackupError,
   exportToFile,
   importMerge,
@@ -46,7 +47,7 @@ export default function DataScreen() {
       const backup = await pickAndReadBackup();
       setPending(backup);
     } catch (err: unknown) {
-      if (err instanceof BackupError && err.message === "Import canceled.") {
+      if (err instanceof BackupCancelledError) {
         // silent
       } else {
         Alert.alert(
@@ -232,32 +233,34 @@ function ModalSheet({
   children: React.ReactNode;
 }) {
   const theme = useTheme();
-  if (!visible) return null;
   return (
-    <Pressable
-      onPress={onClose}
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: theme.colors.overlay,
-        justifyContent: "flex-end",
-      }}
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
     >
       <Pressable
-        onPress={(e) => e.stopPropagation()}
+        onPress={onClose}
         style={{
-          backgroundColor: theme.colors.bgElevated,
-          padding: theme.spacing.xl,
-          gap: theme.spacing.md,
-          borderTopLeftRadius: theme.radii.xl,
-          borderTopRightRadius: theme.radii.xl,
+          flex: 1,
+          backgroundColor: theme.colors.overlay,
+          justifyContent: "flex-end",
         }}
       >
-        {children}
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          style={{
+            backgroundColor: theme.colors.bgElevated,
+            padding: theme.spacing.xl,
+            gap: theme.spacing.md,
+            borderTopLeftRadius: theme.radii.xl,
+            borderTopRightRadius: theme.radii.xl,
+          }}
+        >
+          {children}
+        </Pressable>
       </Pressable>
-    </Pressable>
+    </Modal>
   );
 }
