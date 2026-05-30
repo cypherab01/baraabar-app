@@ -37,13 +37,15 @@ The data model is split across **multiple stores keyed by trip id** rather than 
 - `tripsStore` — array of `Trip` (key `@bills/trips`)
 - `expensesStoreFor(tripId)` — lazily-created `Expense[]` store per trip (key `@bills/expenses:<tripId>`)
 
-When mutating, **always go through `storage/tripsStore.ts` helpers** (`createTrip`, `addExpense`, `removeMember`, `clearAllData`, etc.). They keep both stores in sync — e.g. `deleteTrip` removes the in-memory expense store, the `AsyncStorage` row, and the trip itself; `removeMember` enforces invariants (min 2 members, can't remove a member who has paid for expenses).
+When mutating, **always go through `storage/tripsStore.ts` helpers** (`createTrip`, `addExpense`, `removeMember`, `clearAllData`, etc.). They keep both stores in sync — e.g. `deleteTrip` removes the in-memory expense store, the `AsyncStorage` row, and the trip itself; `removeMember` enforces invariants (min 2 members, can't remove a member who has paid for expenses) **and also strips the removed id from every expense's `splitWith` array, dropping the field entirely if the set empties**.
 
 `clearAllData` deletes every key starting with `@bills/`. If you add a new persisted bucket, prefix its key with `@bills/` so it participates in clear-all.
 
 ### Settlement math — `lib/settle.ts`
 
 `calculateSettlement(trip, expenses)` returns balances + a minimal transfer list using a greedy creditor/debtor pairing (`computeTransfers`). All amounts are rounded to cents via `roundCents`; comparisons use an `EPS = 0.01` tolerance. Don't switch to float equality.
+
+Each expense divides by its own **effective share set** (`effectiveShareSet`), not by `trip.members.length`. If `expense.splitWith` is set, only those members owe a share; if it's `undefined`, everyone owes. Stale ids (members removed after the expense was created) are filtered at calc time and fall back to "everyone" if every id is stale. `Settlement.perPerson` is still computed as `totalSpent / memberCount` for backward compat, but it's meaningless when any expense has a `splitWith` — use the exported `hasPartialSplits(expenses)` to detect that case and avoid showing a misleading equal-share number (see `app/trip/[id].tsx` for the "Varies" treatment).
 
 ### Theming
 
