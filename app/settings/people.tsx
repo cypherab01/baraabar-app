@@ -6,6 +6,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Switch,
   View,
 } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -21,7 +22,9 @@ import { useTrips } from "@/hooks/useTrips";
 import {
   createPerson,
   deletePerson,
+  personsStore,
   renamePerson,
+  setPersonArchived,
 } from "@/storage/personsStore";
 import { useTheme } from "@/theme";
 import type { Person } from "@/types/models";
@@ -38,6 +41,7 @@ export default function PeopleScreen() {
   const [editing, setEditing] = useState<Person | null>(null);
   const [adding, setAdding] = useState(false);
   const [draftName, setDraftName] = useState("");
+  const [nameError, setNameError] = useState<string | undefined>(undefined);
 
   const usageByPerson = useMemo(() => {
     const map = new Map<string, number>();
@@ -53,32 +57,39 @@ export default function PeopleScreen() {
     return map;
   }, [trips]);
 
-  const sorted = useMemo(
-    () =>
-      [...persons].sort((a, b) => {
-        const ua = usageByPerson.get(a.id) ?? 0;
-        const ub = usageByPerson.get(b.id) ?? 0;
-        if (ua !== ub) return ub - ua;
-        return b.createdAt - a.createdAt;
-      }),
-    [persons, usageByPerson],
-  );
+  // Active first (by usage desc, then alphabetical), then inactive at the bottom.
+  const sorted = useMemo(() => {
+    const byUseThenName = (a: Person, b: Person) => {
+      const ua = usageByPerson.get(a.id) ?? 0;
+      const ub = usageByPerson.get(b.id) ?? 0;
+      if (ua !== ub) return ub - ua;
+      return a.name.localeCompare(b.name);
+    };
+    const active = persons.filter((p) => !p.archivedAt).sort(byUseThenName);
+    const inactive = persons.filter((p) => !!p.archivedAt).sort(byUseThenName);
+    return [...active, ...inactive];
+  }, [persons, usageByPerson]);
 
   const openEdit = (p: Person) => {
     setEditing(p);
     setDraftName(p.name);
+    setNameError(undefined);
   };
 
   const closeSheet = () => {
     setEditing(null);
     setAdding(false);
     setDraftName("");
+    setNameError(undefined);
   };
 
   const saveRename = () => {
     if (!editing) return;
     const next = draftName.trim();
-    if (!next) return;
+    if (!next) {
+      setNameError("Enter a name");
+      return;
+    }
     renamePerson(editing.id, next);
     closeSheet();
   };
@@ -108,12 +119,15 @@ export default function PeopleScreen() {
 
   const saveNew = () => {
     const next = draftName.trim();
-    if (!next) return;
-    const exists = persons.some(
-      (p) => p.name.trim().toLowerCase() === next.toLowerCase(),
-    );
+    if (!next) {
+      setNameError("Enter a name");
+      return;
+    }
+    const exists = personsStore
+      .getSnapshot()
+      .some((p) => p.name.trim().toLowerCase() === next.toLowerCase());
     if (exists) {
-      Alert.alert("Already added", `Someone named "${next}" already exists.`);
+      setNameError(`Someone named “${next}” already exists.`);
       return;
     }
     createPerson(next);
@@ -145,6 +159,7 @@ export default function PeopleScreen() {
           <Card padded={false}>
             {sorted.map((p, i) => {
               const usage = usageByPerson.get(p.id) ?? 0;
+              const isActive = !p.archivedAt;
               return (
                 <Pressable
                   key={p.id}
@@ -159,6 +174,7 @@ export default function PeopleScreen() {
                     backgroundColor: pressed
                       ? theme.colors.surfaceAlt
                       : "transparent",
+                    opacity: isActive ? 1 : 0.55,
                     borderBottomWidth: i < sorted.length - 1 ? 0.5 : 0,
                     borderBottomColor: theme.colors.border,
                   })}
@@ -185,13 +201,29 @@ export default function PeopleScreen() {
                   <View style={{ flex: 1 }}>
                     <Text>{p.name}</Text>
                     <Text variant="caption" tone="muted">
-                      Used in {usage} trip{usage === 1 ? "" : "s"}
+                      {isActive ? "" : "Inactive · "}Used in {usage} trip
+                      {usage === 1 ? "" : "s"}
                     </Text>
                   </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={18}
-                    color={theme.colors.textSubtle}
+                  <Switch
+                    value={isActive}
+                    onValueChange={(next) =>
+                      setPersonArchived(p.id, !next)
+                    }
+                    trackColor={{
+                      false: theme.colors.borderStrong,
+                      true: theme.colors.accent,
+                    }}
+                    thumbColor={
+                      Platform.OS === "android"
+                        ? isActive
+                          ? theme.colors.accentText
+                          : theme.colors.surface
+                        : undefined
+                    }
+                    accessibilityLabel={
+                      isActive ? `Set ${p.name} inactive` : `Set ${p.name} active`
+                    }
                   />
                 </Pressable>
               );
@@ -261,10 +293,14 @@ export default function PeopleScreen() {
             <TextField
               label="Name"
               value={draftName}
-              onChangeText={setDraftName}
+              onChangeText={(v) => {
+                setDraftName(v);
+                if (nameError) setNameError(undefined);
+              }}
               autoCapitalize="words"
               maxLength={40}
               autoFocus
+              error={nameError}
             />
 
             {editing ? (

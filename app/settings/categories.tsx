@@ -41,6 +41,7 @@ export default function CategoriesScreen() {
   const [adding, setAdding] = useState(false);
   const [draftLabel, setDraftLabel] = useState("");
   const [draftEmoji, setDraftEmoji] = useState("✨");
+  const [labelError, setLabelError] = useState<string | undefined>(undefined);
 
   const usage = useMemo(() => {
     const map = new Map<string, number>();
@@ -60,6 +61,7 @@ export default function CategoriesScreen() {
     setEditing(c);
     setDraftLabel(c.label);
     setDraftEmoji(c.emoji);
+    setLabelError(undefined);
   };
 
   const close = () => {
@@ -67,12 +69,16 @@ export default function CategoriesScreen() {
     setAdding(false);
     setDraftLabel("");
     setDraftEmoji("✨");
+    setLabelError(undefined);
   };
 
   const save = () => {
     const label = draftLabel.trim();
     const emoji = draftEmoji.trim() || "✨";
-    if (!label) return;
+    if (!label) {
+      setLabelError("Enter a label");
+      return;
+    }
     if (editing) {
       updateCategory(editing.id, { label, emoji });
     } else {
@@ -227,10 +233,14 @@ export default function CategoriesScreen() {
             <TextField
               label="Label"
               value={draftLabel}
-              onChangeText={setDraftLabel}
+              onChangeText={(v) => {
+                setDraftLabel(v);
+                if (labelError) setLabelError(undefined);
+              }}
               autoCapitalize="sentences"
               maxLength={30}
               autoFocus
+              error={labelError}
             />
 
             <Text variant="caption" tone="muted">

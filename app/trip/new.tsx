@@ -49,12 +49,14 @@ export default function NewTripScreen() {
 
   const sortedPersons = useMemo(
     () =>
-      [...persons].sort((a, b) => {
-        const ua = usageByPerson.get(a.id) ?? 0;
-        const ub = usageByPerson.get(b.id) ?? 0;
-        if (ua !== ub) return ub - ua;
-        return b.createdAt - a.createdAt;
-      }),
+      persons
+        .filter((p) => !p.archivedAt)
+        .sort((a, b) => {
+          const ua = usageByPerson.get(a.id) ?? 0;
+          const ub = usageByPerson.get(b.id) ?? 0;
+          if (ua !== ub) return ub - ua;
+          return a.name.localeCompare(b.name);
+        }),
     [persons, usageByPerson],
   );
 

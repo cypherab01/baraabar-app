@@ -24,7 +24,8 @@ export function createPerson(name: string): Person {
  * Resolve a Person for `name`, creating one if no case-insensitive match exists.
  * Use this when an in-app flow takes a free-text name and needs to make sure
  * that person is reflected in the global directory (e.g., adding a member to
- * an existing trip).
+ * an existing trip). If a matching Person is archived, they're un-archived —
+ * the user is clearly engaging with them again.
  */
 export function findOrCreatePerson(name: string): Person {
   const trimmed = name.trim();
@@ -36,8 +37,26 @@ export function findOrCreatePerson(name: string): Person {
   const existing = personsStore
     .getSnapshot()
     .find((p) => p.name.trim().toLowerCase() === key);
-  if (existing) return existing;
+  if (existing) {
+    if (existing.archivedAt) {
+      setPersonArchived(existing.id, false);
+      return { ...existing, archivedAt: undefined };
+    }
+    return existing;
+  }
   return createPerson(trimmed);
+}
+
+export function setPersonArchived(id: string, archived: boolean) {
+  personsStore.set((prev) =>
+    prev.map((p) => {
+      if (p.id !== id) return p;
+      if (archived) return { ...p, archivedAt: Date.now() };
+      const next = { ...p };
+      delete next.archivedAt;
+      return next;
+    }),
+  );
 }
 
 export function renamePerson(id: string, name: string) {

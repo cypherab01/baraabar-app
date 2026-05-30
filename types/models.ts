@@ -21,6 +21,8 @@ export interface Person {
   id: string;
   name: string;
   createdAt: number;
+  /** When set, the person is "inactive" — hidden from the trip-create picker but kept in the directory and in trip history. */
+  archivedAt?: number;
 }
 
 export interface Category {
