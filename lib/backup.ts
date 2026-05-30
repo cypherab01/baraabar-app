@@ -1,6 +1,7 @@
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
 import { categoriesStore } from "@/storage/categoriesStore";
 import { preserveV1MigrationFlag } from "@/storage/migrations";
 import { personsStore } from "@/storage/personsStore";
@@ -57,10 +58,38 @@ export async function buildBackup(): Promise<BackupV1> {
   };
 }
 
-export async function exportToFile(): Promise<void> {
+export interface ExportResult {
+  /** true on Android when the user picked a folder and we wrote there; false on iOS when handed off to the share sheet. */
+  savedToDevice: boolean;
+}
+
+export async function exportToFile(): Promise<ExportResult> {
   const data = await buildBackup();
   const json = JSON.stringify(data, null, 2);
-  const uri = `${FileSystem.cacheDirectory}baraabar-backup-${todayStamp()}.json`;
+  const filename = `baraabar-backup-${todayStamp()}.json`;
+
+  if (Platform.OS === "android") {
+    // Storage Access Framework: user picks a directory once; we write the file there.
+    // No manifest permission required on Android 11+ (API 30); SAF is the permission.
+    const SAF = FileSystem.StorageAccessFramework;
+    const perm = await SAF.requestDirectoryPermissionsAsync();
+    if (!perm.granted) {
+      throw new BackupCancelledError();
+    }
+    const fileUri = await SAF.createFileAsync(
+      perm.directoryUri,
+      filename,
+      "application/json",
+    );
+    await FileSystem.writeAsStringAsync(fileUri, json, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    return { savedToDevice: true };
+  }
+
+  // iOS: write to a temp file and hand off to the share sheet.
+  // "Save to Files" in the share sheet stores it on-device.
+  const uri = `${FileSystem.cacheDirectory}${filename}`;
   await FileSystem.writeAsStringAsync(uri, json, {
     encoding: FileSystem.EncodingType.UTF8,
   });
@@ -71,13 +100,14 @@ export async function exportToFile(): Promise<void> {
     mimeType: "application/json",
     dialogTitle: "Baraabar backup",
   });
+  return { savedToDevice: false };
 }
 
 export class BackupError extends Error {}
 
 export class BackupCancelledError extends BackupError {
   constructor() {
-    super("Import canceled.");
+    super("Canceled.");
     this.name = "BackupCancelledError";
   }
 }

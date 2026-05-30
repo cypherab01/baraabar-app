@@ -173,16 +173,21 @@ export default function MoreScreen() {
           </Card>
         </View>
 
-        <Card padded={false}>
-          <Row
-            icon="trash-outline"
-            label={clearing ? "Clearing…" : "Clear all data"}
-            description="Wipe every trip, expense, person, and setting"
-            onPress={handleClear}
-            destructive
-            divider={false}
-          />
-        </Card>
+        <View style={{ gap: theme.spacing.sm }}>
+          <Text variant="overline" style={{ color: theme.colors.negative }}>
+            Danger zone
+          </Text>
+          <Card padded={false}>
+            <Row
+              icon="trash-outline"
+              label={clearing ? "Clearing…" : "Clear all data"}
+              description="Wipe every trip, expense, person, and setting"
+              onPress={handleClear}
+              destructive
+              divider={false}
+            />
+          </Card>
+        </View>
       </ScrollView>
     </Screen>
   );

@@ -1,6 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, View } from "react-native";
+import {
+  Alert,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -29,12 +37,22 @@ export default function DataScreen() {
   const handleExport = async () => {
     setBusy("export");
     try {
-      await exportToFile();
+      const result = await exportToFile();
+      if (result.savedToDevice) {
+        Alert.alert(
+          "Backup saved",
+          "Your backup is saved to the folder you picked.",
+        );
+      }
     } catch (err: unknown) {
-      Alert.alert(
-        "Couldn't export",
-        err instanceof Error ? err.message : "Unknown error",
-      );
+      if (err instanceof BackupCancelledError) {
+        // silent
+      } else {
+        Alert.alert(
+          "Couldn't export",
+          err instanceof Error ? err.message : "Unknown error",
+        );
+      }
     } finally {
       setBusy(null);
     }
@@ -115,14 +133,22 @@ export default function DataScreen() {
         <Card padded>
           <Text variant="subheading">Back up to file</Text>
           <Text variant="caption" tone="muted" style={{ marginTop: 4 }}>
-            Saves every trip, expense, person, and category as a JSON file you
-            can email or move to another phone.
+            {Platform.OS === "android"
+              ? "Pick a folder on your device and we'll save a JSON file there with every trip, expense, person, and category."
+              : "Save a JSON file with every trip, expense, person, and category. Tap “Save to Files” in the share sheet to keep it on this device."}
           </Text>
           <View style={{ marginTop: theme.spacing.md }}>
             <Button
               label={busy === "export" ? "Preparing…" : "Export"}
               onPress={handleExport}
               disabled={busy !== null}
+              leading={
+                <Ionicons
+                  name="cloud-upload-outline"
+                  size={18}
+                  color={theme.colors.accentText}
+                />
+              }
             />
           </View>
         </Card>
@@ -138,6 +164,13 @@ export default function DataScreen() {
               label={busy === "import" ? "Loading…" : "Import"}
               onPress={handleImport}
               disabled={busy !== null}
+              leading={
+                <Ionicons
+                  name="cloud-download-outline"
+                  size={18}
+                  color={theme.colors.accentText}
+                />
+              }
             />
           </View>
         </Card>
@@ -239,27 +272,32 @@ function ModalSheet({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <Pressable
-        onPress={onClose}
-        style={{
-          flex: 1,
-          backgroundColor: theme.colors.overlay,
-          justifyContent: "flex-end",
-        }}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
         <Pressable
-          onPress={(e) => e.stopPropagation()}
+          onPress={onClose}
           style={{
-            backgroundColor: theme.colors.bgElevated,
-            padding: theme.spacing.xl,
-            gap: theme.spacing.md,
-            borderTopLeftRadius: theme.radii.xl,
-            borderTopRightRadius: theme.radii.xl,
+            flex: 1,
+            backgroundColor: theme.colors.overlay,
+            justifyContent: "flex-end",
           }}
         >
-          {children}
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: theme.colors.bgElevated,
+              padding: theme.spacing.xl,
+              gap: theme.spacing.md,
+              borderTopLeftRadius: theme.radii.xl,
+              borderTopRightRadius: theme.radii.xl,
+            }}
+          >
+            {children}
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

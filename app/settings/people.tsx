@@ -3,10 +3,12 @@ import { useMemo, useState } from "react";
 import {
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   View,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -228,14 +230,18 @@ export default function PeopleScreen() {
         animationType="slide"
         onRequestClose={closeSheet}
       >
-        <Pressable
-          onPress={closeSheet}
-          style={{
-            flex: 1,
-            backgroundColor: theme.colors.overlay,
-            justifyContent: "flex-end",
-          }}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
         >
+          <Pressable
+            onPress={closeSheet}
+            style={{
+              flex: 1,
+              backgroundColor: theme.colors.overlay,
+              justifyContent: "flex-end",
+            }}
+          >
           <Pressable
             onPress={(e) => e.stopPropagation()}
             style={{
@@ -316,7 +322,8 @@ export default function PeopleScreen() {
               </View>
             </View>
           </Pressable>
-        </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );
