@@ -18,7 +18,7 @@ import { SegmentedControl } from "@/components/SegmentedControl";
 import { Text } from "@/components/Text";
 import { useExpenses, useTrip } from "@/hooks/useTrips";
 import { formatAmount, formatDayLabel } from "@/lib/format";
-import { calculateSettlement, type MemberBalance } from "@/lib/settle";
+import { calculateSettlement, hasPartialSplits, type MemberBalance } from "@/lib/settle";
 import {
   closeTrip,
   deleteExpense,
@@ -43,6 +43,8 @@ export default function TripDetailScreen() {
     () => (trip ? calculateSettlement(trip, expenses) : null),
     [trip, expenses],
   );
+
+  const anyPartial = useMemo(() => hasPartialSplits(expenses), [expenses]);
 
   if (!trip) {
     return (
@@ -137,7 +139,7 @@ export default function TripDetailScreen() {
         }
       />
 
-      <TotalsHero trip={trip} total={settlement?.totalSpent ?? 0} />
+      <TotalsHero trip={trip} total={settlement?.totalSpent ?? 0} anyPartial={anyPartial} />
 
       <View style={{ marginTop: theme.spacing.lg }}>
         <SegmentedControl
@@ -173,7 +175,7 @@ export default function TripDetailScreen() {
             }}
           />
         ) : (
-          <SummaryTab trip={trip} settlement={settlement!} />
+          <SummaryTab trip={trip} settlement={settlement!} anyPartial={anyPartial} />
         )}
       </View>
 
@@ -206,8 +208,22 @@ export default function TripDetailScreen() {
   );
 }
 
-function TotalsHero({ trip, total }: { trip: Trip; total: number }) {
+function TotalsHero({
+  trip,
+  total,
+  anyPartial,
+}: {
+  trip: Trip;
+  total: number;
+  anyPartial: boolean;
+}) {
   const theme = useTheme();
+  const subtitle =
+    trip.members.length === 0
+      ? "No members"
+      : anyPartial
+        ? `Across ${trip.members.length} people · some custom splits`
+        : `Split evenly across ${trip.members.length} people`;
   return (
     <Card padded style={{ marginTop: theme.spacing.md }}>
       <Text variant="overline" tone="subtle">
@@ -227,9 +243,7 @@ function TotalsHero({ trip, total }: { trip: Trip; total: number }) {
         {formatAmount(total, trip.currency)}
       </Text>
       <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>
-        {trip.members.length > 0
-          ? `Split evenly across ${trip.members.length} people`
-          : "No members"}
+        {subtitle}
       </Text>
     </Card>
   );
@@ -383,9 +397,11 @@ function MemberSpendPill({
 function SummaryTab({
   trip,
   settlement,
+  anyPartial,
 }: {
   trip: Trip;
   settlement: ReturnType<typeof calculateSettlement>;
+  anyPartial: boolean;
 }) {
   const theme = useTheme();
 
@@ -415,23 +431,42 @@ function SummaryTab({
             justifyContent: "space-between",
           }}
         >
-          <View>
+          <View style={{ flex: 1 }}>
             <Text variant="caption" tone="muted">
               Each person&apos;s share
             </Text>
-            <Text
-              style={{
-                fontFamily: "Inter_700Bold",
-                fontSize: 28,
-                lineHeight: 34,
-                letterSpacing: -0.5,
-                marginTop: 2,
-                color: theme.colors.text,
-                fontVariant: ["tabular-nums"],
-              }}
-            >
-              {formatAmount(settlement.perPerson, trip.currency)}
-            </Text>
+            {anyPartial ? (
+              <Text
+                style={{
+                  fontFamily: "Inter_700Bold",
+                  fontSize: 22,
+                  lineHeight: 28,
+                  marginTop: 4,
+                  color: theme.colors.text,
+                }}
+              >
+                Varies
+              </Text>
+            ) : (
+              <Text
+                style={{
+                  fontFamily: "Inter_700Bold",
+                  fontSize: 28,
+                  lineHeight: 34,
+                  letterSpacing: -0.5,
+                  marginTop: 2,
+                  color: theme.colors.text,
+                  fontVariant: ["tabular-nums"],
+                }}
+              >
+                {formatAmount(settlement.perPerson, trip.currency)}
+              </Text>
+            )}
+            {anyPartial ? (
+              <Text variant="caption" tone="muted" style={{ marginTop: 2 }}>
+                Some expenses split with a subset
+              </Text>
+            ) : null}
           </View>
           <Pill
             label={`${trip.members.length} people`}
