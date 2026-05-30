@@ -1,0 +1,62 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project
+
+Baraabar — an Expo / React Native bill splitter for trips. Local-only (no network): the `android.permissions` list explicitly **blocks** `INTERNET` and `ACCESS_NETWORK_STATE`. Don't introduce code that depends on network access.
+
+The Expo `slug` is `baraabar`; the package name on Android is `com.cypherab01.baraabar`. The repo directory name (`bill-splitter`) and `package.json` name don't match the product — use `app.json` as the source of truth for branding.
+
+## Commands
+
+Package manager is **pnpm** (see `pnpm-lock.yaml`, `pnpm-workspace.yaml` with `nodeLinker: hoisted`). Use `pnpm` rather than `npm` for installs.
+
+- `pnpm start` — Expo dev server (Metro)
+- `pnpm ios` / `pnpm android` / `pnpm web` — start with a target
+- `pnpm lint` — `expo lint` (flat config in `eslint.config.js`, extends `eslint-config-expo/flat`)
+
+There is **no test runner configured**. Don't claim "tests pass" — there are none.
+
+EAS build profiles in `eas.json`: `development` (dev client, internal), `preview` (internal APK), `production` (app-bundle, `autoIncrement: true`). The EAS project ID is wired in `app.json` under `extra.eas.projectId`.
+
+## Architecture
+
+### Routing — expo-router with typed routes
+
+File-based routing under `app/`. The root `app/_layout.tsx` declares the Stack and which screens are presented as modals. Modal screens: `trip/new`, `trip/[id]/members`, `trip/[id]/expense/new`, `trip/[id]/expense/[expenseId]`. Tabs live under `app/(tabs)/` (Trips / Compare / About).
+
+`typedRoutes` and `reactCompiler` are enabled experiments in `app.json`; `newArchEnabled: true`. Don't add babel/reanimated config that conflicts with the React Compiler — it's on by default for this project.
+
+### State / persistence — custom AsyncStorage store, not Redux/Zustand/etc.
+
+`storage/asyncStore.ts` is a hand-rolled store factory built on `AsyncStorage` + `useSyncExternalStore`. It debounces persistence (150ms default) and exposes a snapshot/subscribe API. Components read via the hooks in `hooks/useTrips.ts` and `hooks/useAllExpenses.ts`.
+
+The data model is split across **multiple stores keyed by trip id** rather than one global blob:
+
+- `tripsStore` — array of `Trip` (key `@bills/trips`)
+- `expensesStoreFor(tripId)` — lazily-created `Expense[]` store per trip (key `@bills/expenses:<tripId>`)
+
+When mutating, **always go through `storage/tripsStore.ts` helpers** (`createTrip`, `addExpense`, `removeMember`, `clearAllData`, etc.). They keep both stores in sync — e.g. `deleteTrip` removes the in-memory expense store, the `AsyncStorage` row, and the trip itself; `removeMember` enforces invariants (min 2 members, can't remove a member who has paid for expenses).
+
+`clearAllData` deletes every key starting with `@bills/`. If you add a new persisted bucket, prefix its key with `@bills/` so it participates in clear-all.
+
+### Settlement math — `lib/settle.ts`
+
+`calculateSettlement(trip, expenses)` returns balances + a minimal transfer list using a greedy creditor/debtor pairing (`computeTransfers`). All amounts are rounded to cents via `roundCents`; comparisons use an `EPS = 0.01` tolerance. Don't switch to float equality.
+
+### Theming
+
+`theme/tokens.ts` defines `palettes`, `spacing`, `radii`, `typography` and the `Theme` shape. `theme/ThemeProvider.tsx` reads `useColorScheme()` and builds the theme; `app/_layout.tsx` then mirrors those tokens into a React Navigation `NavTheme` and also calls `SystemUI.setBackgroundColorAsync` so the native window background matches.
+
+Components consume the theme via `useTheme()`. There's no StyleSheet object built off the theme — styles are inline using theme values. Follow that pattern rather than introducing a styled-components / NativeWind layer.
+
+Fonts: Inter (400/500/600/700) loaded via `@expo-google-fonts/inter` in the root layout; the splash screen is held until fonts load. Always reference fonts through `theme.typography.*` or `fontFamily.*` — don't hardcode `"Inter_..."` strings in new components (`components/Text.tsx` is the one allowed exception because it maps a `weight` prop).
+
+### Path alias
+
+`@/*` → repo root (`tsconfig.json`). Use it for cross-directory imports (`@/theme`, `@/storage/tripsStore`, `@/types/models`).
+
+### IDs
+
+`nanoid/non-secure` is used for trip/member/expense IDs. Don't swap to crypto-grade nanoid — non-secure is intentional (no crypto available, ids are local-only).
