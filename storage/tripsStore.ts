@@ -129,8 +129,10 @@ export function removeMember(tripId: string, memberId: string): boolean {
   const trip = tripsStore.getSnapshot().find((t) => t.id === tripId);
   if (!trip) return false;
   if (trip.members.length <= 2) return false;
-  const expenses = expensesStoreFor(tripId).getSnapshot();
+  const expensesStore = expensesStoreFor(tripId);
+  const expenses = expensesStore.getSnapshot();
   if (expenses.some((e) => e.payerId === memberId)) return false;
+
   tripsStore.set((prev) =>
     prev.map((t) =>
       t.id === tripId
@@ -138,6 +140,20 @@ export function removeMember(tripId: string, memberId: string): boolean {
         : t,
     ),
   );
+
+  expensesStore.set((prev) =>
+    prev.map((e) => {
+      if (!e.splitWith) return e;
+      const next = e.splitWith.filter((id) => id !== memberId);
+      if (next.length === e.splitWith.length) return e;
+      if (next.length === 0) {
+        const { splitWith: _omit, ...rest } = e;
+        return rest;
+      }
+      return { ...e, splitWith: next };
+    }),
+  );
+
   return true;
 }
 
@@ -148,6 +164,7 @@ export interface NewExpenseInput {
   category: Expense["category"];
   customCategoryLabel?: string;
   note?: string;
+  splitWith?: string[];
 }
 
 export function addExpense(input: NewExpenseInput): Expense {
@@ -160,6 +177,7 @@ export function addExpense(input: NewExpenseInput): Expense {
     customCategoryLabel: input.customCategoryLabel?.trim() || undefined,
     note: input.note?.trim() || undefined,
     createdAt: Date.now(),
+    splitWith: input.splitWith,
   };
   expensesStoreFor(input.tripId).set((prev) => [expense, ...prev]);
   return expense;
