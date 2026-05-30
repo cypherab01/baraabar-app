@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useState } from "react";
 import {
   Alert,
@@ -25,14 +26,40 @@ import {
   type BackupV1,
   type MergeResult,
 } from "@/lib/backup";
+import { clearAllData } from "@/storage/clearAll";
 import { useTheme } from "@/theme";
 
 export default function DataScreen() {
   const theme = useTheme();
-  const [busy, setBusy] = useState<"export" | "import" | null>(null);
+  const [busy, setBusy] = useState<"export" | "import" | "clear" | null>(null);
   const [pending, setPending] = useState<BackupV1 | null>(null);
   const [replaceConfirm, setReplaceConfirm] = useState(false);
   const [replaceTyped, setReplaceTyped] = useState("");
+
+  const handleClear = () => {
+    Alert.alert(
+      "Clear all data?",
+      "This will permanently delete every trip, expense, person, category, and setting on this device. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear everything",
+          style: "destructive",
+          onPress: async () => {
+            setBusy("clear");
+            try {
+              await clearAllData();
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              ).catch(() => {});
+            } finally {
+              setBusy(null);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const handleExport = async () => {
     setBusy("export");
@@ -122,8 +149,8 @@ export default function DataScreen() {
   return (
     <Screen>
       <AppHeader
-        title="Import / Export"
-        subtitle="Back up all data to a file"
+        title="Backup & data"
+        subtitle="Export, restore, or clear all"
         showBack
       />
       <ScrollView
@@ -174,6 +201,35 @@ export default function DataScreen() {
             />
           </View>
         </Card>
+
+        <View style={{ gap: theme.spacing.sm }}>
+          <Text variant="overline" style={{ color: theme.colors.negative }}>
+            Danger zone
+          </Text>
+          <Card padded>
+            <Text variant="subheading">Clear all data</Text>
+            <Text variant="caption" tone="muted" style={{ marginTop: 4 }}>
+              Wipes every trip, expense, person, category, and setting on this
+              device. This cannot be undone — export a backup first if you
+              might want any of it back.
+            </Text>
+            <View style={{ marginTop: theme.spacing.md }}>
+              <Button
+                variant="danger"
+                label={busy === "clear" ? "Clearing…" : "Clear all data"}
+                onPress={handleClear}
+                disabled={busy !== null}
+                leading={
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color={theme.colors.accentText}
+                  />
+                }
+              />
+            </View>
+          </Card>
+        </View>
       </ScrollView>
 
       <ModalSheet visible={!!pending} onClose={closeSheet}>

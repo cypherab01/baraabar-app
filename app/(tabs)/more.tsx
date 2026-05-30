@@ -1,14 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import * as Haptics from "expo-haptics";
-import { useState } from "react";
-import { Alert, Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
 import { AppHeader } from "@/components/AppHeader";
 import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { DEVELOPER } from "@/constants/developer";
-import { clearAllData } from "@/storage/clearAll";
 import { useTheme } from "@/theme";
 import * as Linking from "expo-linking";
 
@@ -69,34 +66,8 @@ function Row({
 export default function MoreScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [clearing, setClearing] = useState(false);
 
   const go = (path: string) => () => router.push(path as never);
-
-  const handleClear = () => {
-    Alert.alert(
-      "Clear all data?",
-      "This will permanently delete every trip, expense, person, category, and setting on this device. This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Clear everything",
-          style: "destructive",
-          onPress: async () => {
-            setClearing(true);
-            try {
-              await clearAllData();
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              ).catch(() => {});
-            } finally {
-              setClearing(false);
-            }
-          },
-        },
-      ],
-    );
-  };
 
   return (
     <Screen edges={["top", "left", "right"]}>
@@ -142,8 +113,8 @@ export default function MoreScreen() {
           <Card padded={false}>
             <Row
               icon="archive-outline"
-              label="Import / Export"
-              description="Back up everything to a file"
+              label="Backup & data"
+              description="Export, restore, or clear all"
               onPress={go("/settings/data")}
               divider={false}
             />
@@ -173,21 +144,6 @@ export default function MoreScreen() {
           </Card>
         </View>
 
-        <View style={{ gap: theme.spacing.sm }}>
-          <Text variant="overline" style={{ color: theme.colors.negative }}>
-            Danger zone
-          </Text>
-          <Card padded={false}>
-            <Row
-              icon="trash-outline"
-              label={clearing ? "Clearing…" : "Clear all data"}
-              description="Wipe every trip, expense, person, and setting"
-              onPress={handleClear}
-              destructive
-              divider={false}
-            />
-          </Card>
-        </View>
       </ScrollView>
     </Screen>
   );
