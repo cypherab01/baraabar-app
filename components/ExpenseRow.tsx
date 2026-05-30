@@ -89,6 +89,6 @@ function buildSplitWithLabel(splitWith: string[], members: Member[]): string {
     .filter((n): n is string => Boolean(n));
   if (validNames.length === 0) return "Split with —";
   const head = validNames.slice(0, 2).join(", ");
-  const extra = validNames.length - 2;
+  const extra = splitWith.length - 2;
   return extra > 0 ? `Split with ${head} +${extra}` : `Split with ${head}`;
 }
