@@ -25,12 +25,18 @@ export interface Settlement {
 const roundCents = (n: number) => Math.round(n * 100) / 100;
 
 export function calculateSettlement(trip: Trip, expenses: Expense[]): Settlement {
-  const memberCount = trip.members.length;
+  const memberIds = trip.members.map((m) => m.id);
+  const memberCount = memberIds.length;
   const nameFor = (id: string) =>
     trip.members.find((m) => m.id === id)?.name ?? "?";
 
   const spentByMember = new Map<string, number>();
-  for (const m of trip.members) spentByMember.set(m.id, 0);
+  const owedByMember = new Map<string, number>();
+  for (const id of memberIds) {
+    spentByMember.set(id, 0);
+    owedByMember.set(id, 0);
+  }
+
   let totalSpent = 0;
   for (const e of expenses) {
     totalSpent += e.amount;
@@ -38,17 +44,25 @@ export function calculateSettlement(trip: Trip, expenses: Expense[]): Settlement
       e.payerId,
       (spentByMember.get(e.payerId) ?? 0) + e.amount,
     );
+
+    const shareSet = effectiveShareSet(e, memberIds);
+    if (shareSet.length === 0) continue;
+    const share = e.amount / shareSet.length;
+    for (const id of shareSet) {
+      owedByMember.set(id, (owedByMember.get(id) ?? 0) + share);
+    }
   }
 
   const perPerson = memberCount > 0 ? totalSpent / memberCount : 0;
 
   const byMember: MemberBalance[] = trip.members.map((m) => {
     const spent = spentByMember.get(m.id) ?? 0;
+    const owed = owedByMember.get(m.id) ?? 0;
     return {
       memberId: m.id,
       memberName: m.name,
       spent: roundCents(spent),
-      balance: roundCents(spent - perPerson),
+      balance: roundCents(spent - owed),
     };
   });
 
@@ -60,6 +74,12 @@ export function calculateSettlement(trip: Trip, expenses: Expense[]): Settlement
     byMember,
     transfers,
   };
+}
+
+function effectiveShareSet(expense: Expense, memberIds: string[]): string[] {
+  if (!expense.splitWith) return memberIds;
+  const valid = expense.splitWith.filter((id) => memberIds.includes(id));
+  return valid.length > 0 ? valid : memberIds;
 }
 
 function computeTransfers(
@@ -98,4 +118,8 @@ function computeTransfers(
     if (d.amount <= EPS) di++;
   }
   return transfers;
+}
+
+export function hasPartialSplits(expenses: Expense[]): boolean {
+  return expenses.some((e) => e.splitWith != null);
 }
