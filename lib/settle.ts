@@ -46,7 +46,6 @@ export function calculateSettlement(trip: Trip, expenses: Expense[]): Settlement
     );
 
     const shareSet = effectiveShareSet(e, memberIds);
-    if (shareSet.length === 0) continue;
     const share = e.amount / shareSet.length;
     for (const id of shareSet) {
       owedByMember.set(id, (owedByMember.get(id) ?? 0) + share);
