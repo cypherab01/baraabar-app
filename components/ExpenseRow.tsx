@@ -30,6 +30,9 @@ export function ExpenseRow({
     expense.category === "other" && expense.customCategoryLabel
       ? expense.customCategoryLabel
       : categoryLabel(expense.category);
+  const splitWithLabel = expense.splitWith
+    ? buildSplitWithLabel(expense.splitWith, members)
+    : null;
 
   return (
     <Pressable
@@ -59,6 +62,11 @@ export function ExpenseRow({
             {payer?.name ?? "Unknown"} · {formatRelativeDate(expense.createdAt)}
             {expense.note ? ` · ${expense.note}` : ""}
           </Text>
+          {splitWithLabel ? (
+            <Text variant="caption" tone="muted" numberOfLines={1}>
+              {splitWithLabel}
+            </Text>
+          ) : null}
         </View>
         <Text
           style={{
@@ -73,4 +81,14 @@ export function ExpenseRow({
       </View>
     </Pressable>
   );
+}
+
+function buildSplitWithLabel(splitWith: string[], members: Member[]): string {
+  const validNames = splitWith
+    .map((id) => members.find((m) => m.id === id)?.name)
+    .filter((n): n is string => Boolean(n));
+  if (validNames.length === 0) return "Split with —";
+  const head = validNames.slice(0, 2).join(", ");
+  const extra = validNames.length - 2;
+  return extra > 0 ? `Split with ${head} +${extra}` : `Split with ${head}`;
 }
