@@ -3,14 +3,11 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import { Platform } from "react-native";
 import { categoriesStore } from "@/storage/categoriesStore";
+import { clearAllData } from "@/storage/clearAll";
 import { preserveV1MigrationFlag } from "@/storage/migrations";
 import { personsStore } from "@/storage/personsStore";
 import { settingsStore } from "@/storage/settingsStore";
-import {
-  clearAllData,
-  expensesStoreFor,
-  tripsStore,
-} from "@/storage/tripsStore";
+import { expensesStoreFor, tripsStore } from "@/storage/tripsStore";
 import type {
   AppSettings,
   Category,

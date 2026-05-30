@@ -125,8 +125,6 @@ export function resetExpenseStores(): void {
   expenseStores.clear();
 }
 
-export { clearAllData } from "./clearAll";
-
 export function removeMember(tripId: string, memberId: string): boolean {
   const trip = tripsStore.getSnapshot().find((t) => t.id === tripId);
   if (!trip) return false;

@@ -8,7 +8,7 @@ import { Card } from "@/components/Card";
 import { Screen } from "@/components/Screen";
 import { Text } from "@/components/Text";
 import { DEVELOPER } from "@/constants/developer";
-import { clearAllData } from "@/storage/tripsStore";
+import { clearAllData } from "@/storage/clearAll";
 import { useTheme } from "@/theme";
 import * as Linking from "expo-linking";
 
