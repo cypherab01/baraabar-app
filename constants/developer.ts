@@ -24,7 +24,7 @@ export const DEVELOPER: DeveloperInfo = {
   email: "aghimire074@gmail.com",
   phone: "+977 9847526298",
   location: "Nepal",
-  bio: "Independent developer building small, thoughtful tools that stay out of the way.",
+  bio: "Software Engineer focused on building scalable, reliable, and user-centric digital solutions from concept to deployment.",
   socials: [
     {
       key: "github",
