@@ -488,9 +488,23 @@ function SummaryTab({
       </View>
 
       <View style={{ gap: theme.spacing.sm }}>
-        <Text variant="overline" tone="subtle">
-          Settle up
-        </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+          }}
+        >
+          <Text variant="overline" tone="subtle">
+            Settle up
+          </Text>
+          {settlement.transfers.length > 0 ? (
+            <Text variant="caption" tone="subtle">
+              {settlement.transfers.length} transfer
+              {settlement.transfers.length === 1 ? "" : "s"}
+            </Text>
+          ) : null}
+        </View>
         {settlement.transfers.length === 0 ? (
           <Card padded variant="flat">
             <Text variant="bodyMedium" align="center">
@@ -588,24 +602,59 @@ function TransferRow({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: theme.spacing.md,
-        padding: theme.spacing.md,
+        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
         backgroundColor: theme.colors.accentSoft,
         borderRadius: theme.radii.lg,
       }}
     >
-      <View style={{ flex: 1 }}>
-        <Text variant="bodyMedium">
-          <Text style={{ fontFamily: "Inter_700Bold" }}>{from}</Text> pays{" "}
-          <Text style={{ fontFamily: "Inter_700Bold" }}>{to}</Text>
-        </Text>
+      <Text
+        style={{
+          fontFamily: "Inter_600SemiBold",
+          fontSize: 15,
+          color: theme.colors.text,
+          flexShrink: 1,
+        }}
+        numberOfLines={1}
+      >
+        {from}
+      </Text>
+      <View
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: theme.colors.accent,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons
+          name="arrow-forward"
+          size={14}
+          color={theme.colors.accentText}
+        />
       </View>
       <Text
         style={{
-          fontFamily: "Inter_700Bold",
+          fontFamily: "Inter_600SemiBold",
           fontSize: 15,
+          color: theme.colors.text,
+          flex: 1,
+          flexShrink: 1,
+        }}
+        numberOfLines={1}
+      >
+        {to}
+      </Text>
+      <Text
+        style={{
+          fontFamily: "Inter_700Bold",
+          fontSize: 16,
           color: theme.colors.accent,
           fontVariant: ["tabular-nums"],
+          marginLeft: theme.spacing.sm,
         }}
       >
         {formatAmount(amount, currency)}
