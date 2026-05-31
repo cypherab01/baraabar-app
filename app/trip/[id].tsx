@@ -538,7 +538,6 @@ function BalanceRow({
         borderColor: theme.colors.border,
       }}
     >
-      <MemberAvatar name={balance.memberName} size={40} />
       <View style={{ flex: 1 }}>
         <Text variant="bodyMedium">{balance.memberName}</Text>
         <Text variant="caption" tone="muted">
@@ -595,25 +594,16 @@ function TransferRow({
         borderRadius: theme.radii.lg,
       }}
     >
-      <MemberAvatar name={from} size={36} />
       <View style={{ flex: 1 }}>
         <Text variant="bodyMedium">
           <Text style={{ fontFamily: "Inter_700Bold" }}>{from}</Text> pays{" "}
           <Text style={{ fontFamily: "Inter_700Bold" }}>{to}</Text>
         </Text>
       </View>
-      <Ionicons
-        name="arrow-forward"
-        size={16}
-        color={theme.colors.accent}
-        style={{ marginRight: 4 }}
-      />
-      <MemberAvatar name={to} size={36} />
       <Text
         style={{
           fontFamily: "Inter_700Bold",
           fontSize: 15,
-          marginLeft: 6,
           color: theme.colors.accent,
           fontVariant: ["tabular-nums"],
         }}
