@@ -15,7 +15,11 @@ import { Text } from "@/components/Text";
 import { TextField } from "@/components/TextField";
 import { usePersons } from "@/hooks/usePersons";
 import { useTrips } from "@/hooks/useTrips";
-import { createPerson } from "@/storage/personsStore";
+import {
+  createPerson,
+  findOrCreatePerson,
+  setPersonArchived,
+} from "@/storage/personsStore";
 import { createTrip } from "@/storage/tripsStore";
 import { useTheme } from "@/theme";
 
@@ -76,12 +80,19 @@ export default function NewTripScreen() {
       (p) => p.name.trim().toLowerCase() === trimmed.toLowerCase(),
     );
     if (exists) {
-      Alert.alert(
-        "Already added",
-        `${exists.name} is already in your list. Tap their chip to include them.`,
-      );
-      setNewName("");
+      // An archived person has no chip to tap, so un-archive them rather than
+      // pointing the user at something they can't see.
+      if (exists.archivedAt) {
+        setPersonArchived(exists.id, false);
+      } else {
+        Alert.alert(
+          "Already added",
+          `${exists.name} is already in your list. Tap their chip to include them.`,
+        );
+      }
       setSelected((prev) => new Set(prev).add(exists.id));
+      setNewName("");
+      setAdding(false);
       return;
     }
     const p = createPerson(trimmed);
@@ -91,10 +102,21 @@ export default function NewTripScreen() {
   };
 
   const pendingNewName = adding ? newName.trim() : "";
+  // The pending name resolves to an existing Person when it matches one
+  // case-insensitively; only count it as an extra head if that Person isn't
+  // already selected, otherwise the gate below passes with 2 while the trip
+  // gets built with 1 member.
+  const pendingPersonId = pendingNewName
+    ? persons.find(
+        (p) => p.name.trim().toLowerCase() === pendingNewName.toLowerCase(),
+      )?.id
+    : undefined;
+  const pendingAddsMember =
+    pendingNewName.length > 0 &&
+    !(pendingPersonId != null && selected.has(pendingPersonId));
   // Effective member count includes any name still in the inline input — we'll
   // flush it into the trip on Create so the user doesn't lose what they typed.
-  const effectiveCount =
-    selected.size + (pendingNewName.length > 0 ? 1 : 0);
+  const effectiveCount = selected.size + (pendingAddsMember ? 1 : 0);
 
   const nameError =
     submitted && !name.trim() ? "Give your trip a name" : undefined;
@@ -112,11 +134,9 @@ export default function NewTripScreen() {
     const finalIds = new Set(selected);
 
     if (pendingNewName) {
-      const lowered = pendingNewName.toLowerCase();
-      const existing = persons.find(
-        (p) => p.name.trim().toLowerCase() === lowered,
-      );
-      const flushed = existing ?? createPerson(pendingNewName);
+      // findOrCreatePerson also un-archives a matching Person, and finalIds is
+      // a Set so re-adding an already-selected id is a no-op.
+      const flushed = findOrCreatePerson(pendingNewName);
       byId.set(flushed.id, flushed);
       finalIds.add(flushed.id);
     }
