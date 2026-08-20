@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Alert, Pressable, View } from "react-native";
+import { useNavigation, useRouter } from "expo-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Alert, Pressable, TextInput, View } from "react-native";
 import {
   KeyboardAwareScrollView,
   KeyboardStickyView,
@@ -21,6 +21,7 @@ import {
   setPersonArchived,
 } from "@/storage/personsStore";
 import { createTrip } from "@/storage/tripsStore";
+import type { Person } from "@/types/models";
 import { useTheme } from "@/theme";
 
 const DEFAULT_CURRENCY = "NPR";
@@ -28,7 +29,10 @@ const DEFAULT_CURRENCY = "NPR";
 export default function NewTripScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const navigation = useNavigation();
   const persons = usePersons();
+  const nameRef = useRef<TextInput>(null);
+  const newPersonRef = useRef<TextInput>(null);
   const trips = useTrips();
 
   const [name, setName] = useState("");
@@ -36,6 +40,25 @@ export default function NewTripScreen() {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  // Non-null once Create is pressed: a snapshot of the chip list taken *before*
+  // any store writes. Creating a Person on submit would otherwise insert a chip
+  // into this screen in the same frame that router.replace tears the screen
+  // down, and Fabric's view recycling crashes with "addViewAt: ... child
+  // already has a parent".
+  const [frozenPersons, setFrozenPersons] = useState<Person[] | null>(null);
+
+  // Focusing during the modal's enter transition makes the keyboard resize the
+  // screen mid-mount, which crashes Fabric with "child already has a parent".
+  useEffect(() => {
+    const unsubscribe = navigation.addListener(
+      // @ts-expect-error native-stack event, not in the typed route event map
+      "transitionEnd",
+      (e: { data?: { closing?: boolean } }) => {
+        if (!e?.data?.closing) nameRef.current?.focus();
+      },
+    );
+    return unsubscribe;
+  }, [navigation]);
 
   const usageByPerson = useMemo(() => {
     const map = new Map<string, number>();
@@ -73,6 +96,17 @@ export default function NewTripScreen() {
     });
   };
 
+  // Tearing down the focused inline input in the same commit that inserts the
+  // new chip makes the keyboard collapse while Fabric is still mounting the
+  // wrap row, and Android crashes with "addViewAt: ... child already has a
+  // parent". Blur first, then unmount a frame later so the two mount batches
+  // never overlap.
+  const closeAddRow = () => {
+    newPersonRef.current?.blur();
+    setNewName("");
+    requestAnimationFrame(() => setAdding(false));
+  };
+
   const addNew = () => {
     const trimmed = newName.trim();
     if (!trimmed) return;
@@ -91,15 +125,17 @@ export default function NewTripScreen() {
         );
       }
       setSelected((prev) => new Set(prev).add(exists.id));
-      setNewName("");
-      setAdding(false);
+      closeAddRow();
       return;
     }
     const p = createPerson(trimmed);
     setSelected((prev) => new Set(prev).add(p.id));
-    setNewName("");
-    setAdding(false);
+    closeAddRow();
   };
+
+  // While submitting, keep rendering the pre-submit list so the outgoing screen
+  // never mutates its view tree.
+  const shownPersons = frozenPersons ?? sortedPersons;
 
   const pendingNewName = adding ? newName.trim() : "";
   // The pending name resolves to an existing Person when it matches one
@@ -125,8 +161,10 @@ export default function NewTripScreen() {
   const canSubmit = name.trim().length > 0 && effectiveCount >= 2;
 
   const handleCreate = () => {
+    if (frozenPersons) return; // already submitting
     setSubmitted(true);
     if (!canSubmit) return;
+    setFrozenPersons(sortedPersons);
 
     // Resolve every selected Person up-front so we don't depend on stale
     // hook snapshots after a synchronous createPerson call.
@@ -149,7 +187,9 @@ export default function NewTripScreen() {
         .filter((p): p is NonNullable<typeof p> => !!p)
         .map((p) => ({ personId: p.id, name: p.name })),
     });
-    router.replace(`/trip/${trip.id}` as never);
+    // Leave on the next frame so the store writes above commit in a mount
+    // batch of their own, separate from the screen swap.
+    requestAnimationFrame(() => router.replace(`/trip/${trip.id}` as never));
   };
 
   return (
@@ -178,7 +218,7 @@ export default function NewTripScreen() {
           placeholder="e.g. Pokhara Weekend"
           value={name}
           onChangeText={setName}
-          autoFocus
+          ref={nameRef}
           autoCapitalize="words"
           autoCorrect={false}
           error={nameError}
@@ -194,7 +234,7 @@ export default function NewTripScreen() {
           </View>
 
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {sortedPersons.map((p) => {
+            {shownPersons.map((p) => {
               const active = selected.has(p.id);
               return (
                 <Pressable
@@ -270,6 +310,7 @@ export default function NewTripScreen() {
             >
               <View style={{ flex: 1 }}>
                 <TextField
+                  ref={newPersonRef}
                   placeholder="Their name"
                   value={newName}
                   onChangeText={setNewName}
@@ -284,10 +325,7 @@ export default function NewTripScreen() {
               <IconButton
                 size={40}
                 variant="flat"
-                onPress={() => {
-                  setAdding(false);
-                  setNewName("");
-                }}
+                onPress={closeAddRow}
               >
                 <Ionicons
                   name="close"
