@@ -178,6 +178,7 @@ export default function NewTripScreen() {
           placeholder="e.g. Pokhara Weekend"
           value={name}
           onChangeText={setName}
+          autoFocus
           autoCapitalize="words"
           autoCorrect={false}
           error={nameError}
