@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   Animated,
   Easing,
@@ -39,8 +39,8 @@ export function ActionSheet({
 }: ActionSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const slide = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(0)).current;
+  const [slide] = useState(() => new Animated.Value(0));
+  const [fade] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {

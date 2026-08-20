@@ -26,7 +26,9 @@ EAS build profiles in `eas.json`: `development` (dev client, internal), `preview
 
 File-based routing under `app/`. The root `app/_layout.tsx` declares the Stack and which screens are presented as modals. Modal screens: `trip/new`, `trip/[id]/members`, `trip/[id]/expense/new`, `trip/[id]/expense/[expenseId]`. Tabs live under `app/(tabs)/` (Trips / Compare / More).
 
-`typedRoutes` and `reactCompiler` are enabled experiments in `app.json`; `newArchEnabled: true`. Don't add babel/reanimated config that conflicts with the React Compiler — it's on by default for this project.
+`typedRoutes` and `reactCompiler` are enabled experiments in `app.json`. The New Architecture is the SDK default (no `newArchEnabled` flag needed). Don't add babel/reanimated config that conflicts with the React Compiler — it's on by default for this project.
+
+SDK 56+ forbids importing from `@react-navigation/*` directly. Use the `expo-router` entry points instead: `expo-router` for `DarkTheme`/`DefaultTheme`/`ThemeProvider`/`Theme`, `expo-router/react-navigation` for other `@react-navigation/native`/`core`/`elements` symbols, `expo-router/js-tabs` for bottom-tabs symbols like `BottomTabBarHeightContext`.
 
 ### State / persistence — custom AsyncStorage store, not Redux/Zustand/etc.
 

@@ -8,10 +8,10 @@ import {
 import {
   DarkTheme as NavDarkTheme,
   DefaultTheme as NavDefaultTheme,
+  Stack,
   ThemeProvider as NavThemeProvider,
   type Theme as NavTheme,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
+} from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import * as SystemUI from "expo-system-ui";
 import { StatusBar } from "expo-status-bar";
